@@ -3,6 +3,7 @@ Community Discord Bot running on JDA specifically crafted for Vandiland.
 
 **Features:**
 * Economy system
+* RNG based (gambling) commands
 * Inventory system
 * League of Legends data (WIP)
 * Music player (WIP)
@@ -11,8 +12,10 @@ Community Discord Bot running on JDA specifically crafted for Vandiland.
 
 Botdiril uses several dependencies (see ``pom.xml``), maily **JDA** and **lavaplayer**.
 
-**Botdiril pretty much works out of the box with one condition:**
-***Setting up ``settings.json``***
+**Botdiril pretty much works out of the box under one condition:** Setting up ``settings.json``
+
+**Warning:** Botdiril uses hardcoded emotes for item icons by default, you might have to change them, specifically in ``cz.tefek.botdiril.userdata.items`` and the subpackages. 
+For your convenience, the default icons are stored in the `icons` directory.
 
 # Basic configuration:
 For Botdiril to work, you need to get at least a Discord bot secret in the developer center and save it in ``settings.json`` in the **project's root folder**.
