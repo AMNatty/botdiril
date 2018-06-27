@@ -101,6 +101,6 @@ public class CommandLuckyStreak implements Command
     @Override
     public CommandCathegory getCathegory()
     {
-        return CommandCathegory.INVENTORY;
+        return CommandCathegory.ECONOMY;
     }
 }

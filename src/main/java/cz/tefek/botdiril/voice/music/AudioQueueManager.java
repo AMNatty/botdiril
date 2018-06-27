@@ -76,6 +76,16 @@ public class AudioQueueManager
         return queueMap.get(gid).poll();
     }
 
+    public static void clearQueue(long gid)
+    {
+        if (!queueMap.containsKey(gid))
+        {
+            queueMap.put(gid, new LinkedList<AudioTrack>());
+        }
+
+        queueMap.get(gid).clear();
+    }
+
     public static void skip(Guild g, TextChannel tc)
     {
         var player = ActiveChannelManager.getPlayer(g);

@@ -123,6 +123,8 @@ public class ActiveChannelManager
         aps.remove(gid);
         printChannel.remove(gid);
 
+        AudioQueueManager.clearQueue(gid);
+
         tc.sendMessage("**Disconnected.**").submit();
 
         guild.getAudioManager().closeAudioConnection();

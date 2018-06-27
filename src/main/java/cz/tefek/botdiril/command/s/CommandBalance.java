@@ -50,6 +50,6 @@ public final class CommandBalance implements Command
     @Override
     public CommandCathegory getCathegory()
     {
-        return CommandCathegory.INVENTORY;
+        return CommandCathegory.ECONOMY;
     }
 }

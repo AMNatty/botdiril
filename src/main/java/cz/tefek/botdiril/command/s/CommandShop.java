@@ -90,6 +90,6 @@ public final class CommandShop implements Command
     @Override
     public CommandCathegory getCathegory()
     {
-        return CommandCathegory.INVENTORY;
+        return CommandCathegory.ECONOMY;
     }
 }

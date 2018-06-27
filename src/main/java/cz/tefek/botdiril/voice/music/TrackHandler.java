@@ -76,6 +76,8 @@ public class TrackHandler extends AudioEventAdapter
     @Override
     public void onTrackException(AudioPlayer player, AudioTrack track, FriendlyException exception)
     {
+        exception.printStackTrace();
+
         // An already playing track threw an exception (track end event will still be
         // received separately)
     }

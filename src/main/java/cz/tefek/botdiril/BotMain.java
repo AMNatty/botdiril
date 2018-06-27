@@ -28,6 +28,8 @@ public class BotMain
 
     public static void main(String[] args) throws LoginException, InterruptedException, IOException
     {
+        System.setProperty("javax.net.ssl.trustStore", System.getProperty("java.home") + "/lib/security/cacerts");
+
         if (!BotdirilConfig.load())
         {
             System.err.println("ERROR WHILE LOADING CONFIG. ABORTING.");

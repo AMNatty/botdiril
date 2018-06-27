@@ -49,6 +49,7 @@ public class BAudioLoadResultHandler implements AudioLoadResultHandler
     @Override
     public void loadFailed(FriendlyException exception)
     {
+        exception.printStackTrace();
         ActiveChannelManager.getPrintChannel(gid).sendMessage("Error: " + exception.getMessage()).submit();
     }
 }

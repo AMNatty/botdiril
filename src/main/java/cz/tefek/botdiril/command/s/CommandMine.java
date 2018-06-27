@@ -137,6 +137,6 @@ public class CommandMine implements Command
     @Override
     public CommandCathegory getCathegory()
     {
-        return CommandCathegory.INVENTORY;
+        return CommandCathegory.ECONOMY;
     }
 }
