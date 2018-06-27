@@ -63,7 +63,7 @@ public class Item
         items.add(new ItemCrateEpic());
         items.add(new ItemCrateLegendary());
 
-        var kek = new Item("kek", "kek").desc("The kekest of keks.").setEmoteIcon("<:keks:458631472572661761>").setBuyValue(3).setSellValue(1);
+        var kek = new Item("kek", "kek").desc("The kekest of keks.").setEmoteIcon(Item.KEK).setBuyValue(3).setSellValue(1);
         var gemdiril = new Item("gemdiril", "Gemdiril").setEmoteIcon(GEM).desc("A very rare gem of unknown value.").setSellValue(4096);
 
         items.add(kek);
