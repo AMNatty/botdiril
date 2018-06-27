@@ -22,8 +22,11 @@ This is pretty much what you are looking for 90% of the time:
     "key" : "<your Discord bot secret key>"
 }
 ```
+
+# Advanced configuration:
+This assumes you set up an AWS S3 bucket to publicly show user inventories.
 You can see the full JSON structure below.
-*The ``s3config`` object is not required and only extends some of the features*
+*Omitting the ``s3config`` automatically disables any S3 linked features.*
 ```js
 {
     "key" : "<your Discord bot secret key>",
