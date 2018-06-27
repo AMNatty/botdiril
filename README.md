@@ -33,4 +33,4 @@ You can see the full JSON structure below.
     }
 }
 ```
-For more information, see the source code for the command ``FullInventory``.
+For more information, see the source code, specifically the command ``FullInventory``.
