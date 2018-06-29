@@ -120,6 +120,7 @@ public class BEventListener extends ListenerAdapter
     @Override
     public void onGuildVoiceMove(GuildVoiceMoveEvent event)
     {
-        ActiveChannelManager.movedTo(event.getChannelJoined());
+        if (event.getMember().getUser().getIdLong() == event.getJDA().getSelfUser().getIdLong())
+            ActiveChannelManager.movedTo(event.getChannelJoined());
     }
 }
