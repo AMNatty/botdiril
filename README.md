@@ -10,7 +10,7 @@ Community Discord Bot running on JDA specifically crafted for Vandiland.
 
 **This is a Eclipse Maven project. JDK 10+**
 
-Botdiril uses several dependencies (see ``pom.xml``), maily **JDA** and **lavaplayer**.
+Botdiril uses several dependencies (see ``pom.xml``), mainly **JDA** and **lavaplayer**.
 
 **Botdiril pretty much works out of the box under one condition:** Setting up ``settings.json``
 
