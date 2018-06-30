@@ -73,7 +73,7 @@ public class CommandLuckyStreak implements Command
             final int spm = 60;
 
             int thours = (int) (t / sph);
-            int tminutes = (int) (t % spm / 60);
+            int tminutes = (int) (t / 60 % spm);
             int tseconds = (int) (t % 60);
 
             message.getTextChannel().sendMessage(String.format("You still need to wait %d hours %d minutes %d seconds to use lucky strike.", thours, tminutes, tseconds)).submit();
