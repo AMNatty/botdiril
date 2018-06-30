@@ -5,7 +5,7 @@ import java.util.List;
 
 import cz.tefek.botdiril.command.Command;
 import cz.tefek.botdiril.command.CommandCathegory;
-import cz.tefek.botdiril.voice.music.AudioQueueManager;
+import cz.tefek.botdiril.voice.music.ActiveChannelManager;
 import net.dv8tion.jda.core.entities.Message;
 
 public class CommandSkip implements Command
@@ -26,7 +26,19 @@ public class CommandSkip implements Command
     public void interpret(Message message, Object... params)
     {
         var g = message.getGuild();
-        AudioQueueManager.skip(g, message.getTextChannel());
+        var tc = message.getTextChannel();
+        var vcs = g.getMember(message.getAuthor()).getVoiceState();
+
+        if (vcs.inVoiceChannel())
+        {
+            var vc = vcs.getChannel();
+
+            ActiveChannelManager.skip(g, tc, vc);
+        }
+        else
+        {
+            tc.sendMessage("You are not in a voice channel to use music commands.").submit();
+        }
     }
 
     @Override

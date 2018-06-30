@@ -57,7 +57,7 @@ public final class CommandUsage implements Command
     @Override
     public List<String> getAliases()
     {
-        return Arrays.asList("usage");
+        return Arrays.asList("usage", "man");
     }
 
     @Override

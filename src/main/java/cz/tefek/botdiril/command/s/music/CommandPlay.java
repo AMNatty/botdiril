@@ -38,7 +38,7 @@ public class CommandPlay implements Command
         }
         else
         {
-            tc.sendMessage("You are not in a voice channel to play music");
+            tc.sendMessage("You are not in a voice channel to play music").submit();
         }
     }
 

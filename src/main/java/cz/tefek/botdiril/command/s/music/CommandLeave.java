@@ -28,7 +28,7 @@ public class CommandLeave implements Command
         var g = message.getGuild();
         var tc = message.getTextChannel();
 
-        ActiveChannelManager.stop(g, tc);
+        ActiveChannelManager.leave(g, tc);
     }
 
     @Override

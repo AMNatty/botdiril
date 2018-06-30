@@ -8,7 +8,7 @@ import cz.tefek.botdiril.command.CommandCathegory;
 import cz.tefek.botdiril.voice.music.ActiveChannelManager;
 import net.dv8tion.jda.core.entities.Message;
 
-public class CommandNowPlaying implements Command
+public class CommandClearQueue implements Command
 {
     @Override
     public Class<?>[] getArgumentTypes()
@@ -19,25 +19,38 @@ public class CommandNowPlaying implements Command
     @Override
     public List<String> getAliases()
     {
-        return Arrays.asList("nowplaying", "np");
+        return Arrays.asList("clearqueue", "cq", "clearq");
     }
 
     @Override
     public void interpret(Message message, Object... params)
     {
-        ActiveChannelManager.nowPlaying(message.getTextChannel());
+        var g = message.getGuild();
+        var tc = message.getTextChannel();
+        var vcs = g.getMember(message.getAuthor()).getVoiceState();
+
+        if (vcs.inVoiceChannel())
+        {
+            var vc = vcs.getChannel();
+
+            ActiveChannelManager.clear(tc, vc);
+        }
+        else
+        {
+            tc.sendMessage("You are not in a voice channel to use music commands.").submit();
+        }
     }
 
     @Override
     public String usage()
     {
-        return "nowplaying";
+        return "clearqueue";
     }
 
     @Override
     public String description()
     {
-        return "Prints info about the currently playing audio track.";
+        return "Clears the audio track queue.";
     }
 
     @Override
@@ -51,4 +64,5 @@ public class CommandNowPlaying implements Command
     {
         return true;
     }
+
 }
