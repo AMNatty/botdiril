@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.userdata.items.Item;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.entities.Message;
@@ -53,8 +53,12 @@ public class CommandItemInfo implements Command
             else
                 eb.addField("Buys for:", "Cannot be bought", true);
 
+            if (item.canBeSold())
+                eb.addField("Sells for:", item.getSellValue() + Item.COINDIRIL + "s", true);
+            else
+                eb.addField("Sells for:", "Cannot be sold", true);
+
             eb.setColor(0xff00ff);
-            eb.addField("Sells for:", item.getSellValue() + Item.COINDIRIL + "s", true);
             eb.addField("ID:", item.getID(), true);
 
             message.getTextChannel().sendMessage(eb.build()).submit();
@@ -80,8 +84,8 @@ public class CommandItemInfo implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.ECONOMY;
+        return CommandCategory.ITEMS;
     }
 }

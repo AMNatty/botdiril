@@ -4,7 +4,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
+import cz.tefek.botdiril.command.s.superuser.EnumModerativeAction;
+import cz.tefek.botdiril.command.s.superuser.SuperUserCommandBase;
 import cz.tefek.botdiril.userdata.UserStorage;
 import net.dv8tion.jda.core.entities.Message;
 import net.dv8tion.jda.core.exceptions.HierarchyException;
@@ -21,12 +23,23 @@ public class CommandNameChange implements Command
     @Override
     public List<String> getAliases()
     {
-        return Arrays.asList("namechange", "changename", "nicknamechange", "changenickname", "changenick");
+        return Arrays.asList("namechange", "changename", "nicknamechange", "changenickname", "changenick", "rename");
     }
 
     @Override
     public void interpret(Message message, Object... params)
     {
+        final var pc = SuperUserCommandBase.getPrintChannel(message.getGuild());
+
+        if (pc == null)
+        {
+            message.getTextChannel().sendMessage("Sorry but you can't use this command at the moment. (Warning for superusers: There is no log channel.)").submit();
+            return;
+        }
+
+        var member = message.getGuild().getMember(message.getAuthor());
+        var oldNick = member.getNickname();
+        final var oldName = oldNick == null ? message.getAuthor().getName() : oldNick;
         var ui = UserStorage.getByID(message.getAuthor().getIdLong());
         var name = (String) params[0];
         name = name.replaceAll("\\p{Cntrl}", "");
@@ -47,8 +60,13 @@ public class CommandNameChange implements Command
             {
                 try
                 {
-                    message.getGuild().getController().setNickname(message.getGuild().getMember(message.getAuthor()), name).submit();
-                    message.getTextChannel().sendMessage("Your nickname was successfully changed.").submit();
+                    final var newName = name;
+                    message.getGuild().getController().setNickname(message.getGuild().getMember(message.getAuthor()), newName).submit();
+                    message.getTextChannel().sendMessage("Your nickname was successfully changed.").queue(succ -> {
+                        var desc = oldName + " changed his nickname to " + newName + ".\nHe/she will be able to change their name again in 30 again.";
+                        var embed = SuperUserCommandBase.generateLoggedAction(EnumModerativeAction.RENAME, message.getTextChannel(), member, succ.getIdLong(), desc, desc);
+                        pc.sendMessage(embed).submit();
+                    });
                 }
                 catch (HierarchyException e)
                 {
@@ -100,8 +118,8 @@ public class CommandNameChange implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.ADMINISTRATIVE;
+        return CommandCategory.ADMINISTRATIVE;
     }
 }

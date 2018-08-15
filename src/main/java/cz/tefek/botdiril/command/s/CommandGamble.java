@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.core.ServerPreferences;
 import cz.tefek.botdiril.userdata.UserStorage;
 import cz.tefek.botdiril.userdata.items.AmountParser;
@@ -32,9 +32,9 @@ public class CommandGamble implements Command
     {
         var ui = UserStorage.getByID(message.getAuthor().getIdLong());
 
-        if (ui.useTimer("gamble_timeout", 1500) != -1)
+        if (ui.useTimer("gamble_timeout", 500) != -1)
         {
-            message.getTextChannel().sendMessage("Hey don't spam me so hard!").submit();
+            message.getTextChannel().sendMessage("Hey don't spam me so hard! (8 seconds)").submit();
             return;
         }
 
@@ -53,6 +53,7 @@ public class CommandGamble implements Command
         if (kekamt == 0)
         {
             message.getTextChannel().sendMessage("You have no " + Item.KEK + "s, buy some in the shop.").submit();
+            return;
         }
 
         long bet = AmountParser.parse(strp, message, kekamt);
@@ -76,9 +77,9 @@ public class CommandGamble implements Command
                 var betRate = bet / (double) kekamt;
 
                 var random = new SecureRandom();
-                var chest = random.nextInt(101) > 95 && bet > 100;
-                var ratio = random.nextDouble() * 2.1 + betRate * 0.05;
-                var jackpot = random.nextInt(1001) > 985 + (1 - betRate) * 10;
+                var chest = random.nextInt(101) > 96 && bet > 2000;
+                var ratio = random.nextDouble() * 2 + betRate * 0.05;
+                var jackpot = random.nextInt(1001) > 988 + (1 - betRate) * 10;
                 var ultraJackpot = random.nextInt(5001) > 4985 + (1 - betRate) * 10;
 
                 var won = Math.round(ratio * bet) - bet;
@@ -97,7 +98,7 @@ public class CommandGamble implements Command
 
                 if (ultraJackpot && jackpot)
                 {
-                    message.getTextChannel().sendMessage("NANI?!?! How did you get both JACKPOT and ULTRA JACKPOT at once?!?! You win " + won + Item.KEK + "s. GIGA POGGERS").submit();
+                    message.getTextChannel().sendMessage("NANI?!?! How did you get both JACKPOT and ULTRA JACKPOT at once?!?! You win " + won + Item.KEK + "s.").submit();
                 }
                 else if (ultraJackpot)
                 {
@@ -111,23 +112,23 @@ public class CommandGamble implements Command
                 {
                     if (won == 0)
                     {
-                        message.getTextChannel().sendMessage("You get your bet back this time.").submit();
+                        message.getTextChannel().sendMessage("You get your bet back this time. Your lucky number: ").submit();
                     }
                     else if (ratio < 0.25)
                     {
-                        message.getTextChannel().sendMessage("You lost your entire bet - " + bet + Item.KEK + "s. FeelsBadMan :(").submit();
+                        message.getTextChannel().sendMessage("You lost your entire bet - " + bet + Item.KEK + "s. Your lucky number: ").submit();
                     }
                     else if (ratio < 1)
                     {
-                        message.getTextChannel().sendMessage("Unlucky... You lost " + Math.abs(won) + Item.KEK + "s.").submit();
+                        message.getTextChannel().sendMessage("Unlucky... You lost " + Math.abs(won) + Item.KEK + "s. Your lucky number: ").submit();
                     }
                     else if (ratio < 1.5)
                     {
-                        message.getTextChannel().sendMessage("You win " + Math.abs(won) + Item.KEK + "s!").submit();
+                        message.getTextChannel().sendMessage("You win " + Math.abs(won) + Item.KEK + "s! Your lucky number: ").submit();
                     }
                     else
                     {
-                        message.getTextChannel().sendMessage("Nice! You win " + Math.abs(won) + Item.KEK + "s!").submit();
+                        message.getTextChannel().sendMessage("Nice! You win " + Math.abs(won) + Item.KEK + "s! Your lucky number: ").submit();
                     }
                 }
 
@@ -168,8 +169,8 @@ public class CommandGamble implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.ECONOMY;
+        return CommandCategory.GAMBLING;
     }
 }

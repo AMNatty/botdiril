@@ -4,11 +4,7 @@ import java.util.List;
 
 public enum CardRarity
 {
-    BASIC(100, "<:basic:458265423968993280>"),
-    COMMON(300, "<:common:458267281890476032>"),
-    RARE(1000, "<:rare:458267282003722253>"),
-    LEGENDARY(5000, "<:legendary:458267281923899393>"),
-    ULTIMATE(25000, "<:ultimate:458266825172713474>");
+    BASIC(10, "<:basic:458265423968993280>"), COMMON(30, "<:common:458267281890476032>"), RARE(100, "<:rare:458267282003722253>"), LEGENDARY(500, "<:legendary:458267281923899393>"), ULTIMATE(2500, "<:ultimate:458266825172713474>");
 
     long baseSellValue;
     String icon;

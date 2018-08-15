@@ -5,8 +5,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.command.CommandInterpreter;
+import cz.tefek.botdiril.core.BotdirilConfig;
 import cz.tefek.botdiril.core.ServerPreferences;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.MessageBuilder;
@@ -24,7 +25,9 @@ public final class CommandHelp implements Command
     @Override
     public void interpret(Message message, Object... params)
     {
-        var prefix = ServerPreferences.getServerByID(message.getGuild().getIdLong()).getPrefix();
+        var user = message.getAuthor();
+        var guild = message.getGuild();
+        var prefix = ServerPreferences.getServerByID(guild.getIdLong()).getPrefix();
 
         if (params.length == 1)
         {
@@ -38,7 +41,7 @@ public final class CommandHelp implements Command
             }
             else
             {
-                var found = Arrays.stream(CommandCathegory.values()).filter(c -> c.toString().equalsIgnoreCase(cath)).findAny().orElse(null);
+                var found = Arrays.stream(CommandCategory.values()).filter(c -> c.toString().equalsIgnoreCase(cath)).findAny().orElse(null);
 
                 if (found != null)
                 {
@@ -46,7 +49,7 @@ public final class CommandHelp implements Command
                     eb.setColor(Color.CYAN.getRGB());
                     eb.setTitle("Help for the " + found.getName());
 
-                    CommandInterpreter.commands.stream().filter(c -> c.getCathegory() == found).forEach(comm -> {
+                    CommandInterpreter.commands.stream().filter(c -> c.getCategory() == found).forEach(comm -> {
                         eb.addField(new Field(prefix + comm.usage(), comm.description(), false));
                     });
 
@@ -56,7 +59,7 @@ public final class CommandHelp implements Command
                 }
                 else
                 {
-                    message.getTextChannel().sendMessage("Could not find help for that cathegory.").submit();
+                    message.getTextChannel().sendMessage("Could not find help for that category.").submit();
                 }
             }
         }
@@ -66,11 +69,24 @@ public final class CommandHelp implements Command
             eb.setColor(Color.CYAN.getRGB());
             eb.setTitle("Stuck? Here is your help:");
 
-            Arrays.stream(CommandCathegory.values()).forEach(cat -> {
+            Arrays.stream(CommandCategory.values()).forEach(cat -> {
                 eb.addField(cat.getName(), "Type ``" + prefix + "help " + cat.toString().toLowerCase() + "``", false);
             });
 
-            eb.setDescription("There are " + CommandInterpreter.commands.size() + " commands in " + CommandCathegory.values().length + " cathegories total.");
+            long cmdCnt;
+            int catCnt = CommandCategory.values().length;
+
+            if (BotdirilConfig.isSuperUser(guild, user))
+            {
+                cmdCnt = CommandInterpreter.commands.size();
+            }
+            else
+            {
+                cmdCnt = CommandInterpreter.commands.stream().filter(c -> c.getCategory() != CommandCategory.SUPERUSER).count();
+                catCnt -= 1;
+            }
+
+            eb.setDescription("There are " + cmdCnt + " commands in " + catCnt + " categories total.");
 
             message.getTextChannel().sendMessage(new MessageBuilder(eb).build()).submit();
         }
@@ -101,8 +117,8 @@ public final class CommandHelp implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.GENERAL;
+        return CommandCategory.GENERAL;
     }
 }

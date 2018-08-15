@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.userdata.UserStorage;
 import cz.tefek.botdiril.userdata.items.Item;
 import cz.tefek.botdiril.userdata.items.crate.Loot;
@@ -31,7 +31,7 @@ public class CommandPayoutKeks implements Command
         var kek = Item.getByID("kek");
         var keks = ui.howManyOf(kek);
 
-        var common = Item.getByID("commoncrate");
+        var common = Item.getByID("crate");
         var uncommon = Item.getByID("uncommoncrate");
         var epic = Item.getByID("epiccrate");
         var legendary = Item.getByID("legendarycrate");
@@ -157,7 +157,8 @@ public class CommandPayoutKeks implements Command
             sb.append("\n");
         });
 
-        message.getTextChannel().sendMessage(String.format("You cashed out %d %ss for %d %ss and the following items:\n%s", keks, Item.KEK, pokeks + extrakeks, Item.COINDIRIL, sb.toString().trim())).submit();
+        var msg = String.format("You cashed out %d %ss for %d %ss and the following items:\n%s", keks, Item.KEK, pokeks + extrakeks, Item.COINDIRIL, sb.toString().trim());
+        message.getTextChannel().sendMessage(msg).submit();
     }
 
     @Override
@@ -179,8 +180,8 @@ public class CommandPayoutKeks implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.ECONOMY;
+        return CommandCategory.ECONOMY;
     }
 }

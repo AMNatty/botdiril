@@ -4,10 +4,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.userdata.UserStorage;
 import cz.tefek.botdiril.userdata.items.Item;
-import cz.tefek.botdiril.userdata.items.ItemPair;
 import net.dv8tion.jda.core.entities.Message;
 
 public final class CommandBuy implements Command
@@ -32,60 +31,74 @@ public final class CommandBuy implements Command
 
         if (params.length > 1)
         {
-            try
+            if ("all".equalsIgnoreCase((String) params[1]))
             {
-                amt = Integer.parseInt((String) params[1]);
-
-                if (amt < 1 || amt > Long.MAX_VALUE)
+                amt = Integer.MIN_VALUE;
+            }
+            else
+            {
+                try
                 {
-                    channel.sendMessage("You can't buy this many items.").submit();
+                    amt = Long.parseUnsignedLong((String) params[1]);
+                }
+                catch (Exception e)
+                {
+                    channel.sendMessage("You specified an invalid amount.").submit();
                     return;
                 }
-            }
-            catch (Exception e)
-            {
-                channel.sendMessage("You specified an invalid amount.").submit();
-                return;
             }
         }
 
         var item = Item.getByID((String) params[0]);
         var ui = UserStorage.getByID(message.getAuthor().getIdLong());
 
-        if (item != null)
+        if (item == null)
         {
-            if (item.canBeBought())
+            channel.sendMessage("No such item.").submit();
+            return;
+        }
+
+        if (!item.canBeBought())
+        {
+            channel.sendMessage("That item cannot be bought, sorry. :neutral_face:").submit();
+            return;
+        }
+
+        if (ui.getCoins() <= 0)
+        {
+            channel.sendMessage("You don't have any " + Item.COINDIRIL + ". :frowning:").submit();
+            return;
+        }
+
+        if (amt == Integer.MIN_VALUE)
+        {
+            amt = ui.getCoins() / item.getBuyValue();
+        }
+
+        if (amt < 1 || amt > Long.MAX_VALUE)
+        {
+            channel.sendMessage("You can't buy this many items.").submit();
+            return;
+        }
+
+        if (amt > 1)
+        {
+            if (ui.buyItems(item, item.getBuyValue(), amt))
             {
-                if (amt > 1)
-                {
-                    if (ui.buyItems(item, item.getBuyValue(), amt))
-                    {
-                        ui.setUndo(new ItemPair(item, amt));
-                        channel.sendMessage("You succesfully bought " + amt + " " + item.getHumanName() + "s for " + (item.getBuyValue() * amt) + Item.COINDIRIL + "s.").submit();
-                    }
-                    else
-                    {
-                        channel.sendMessage("You don't have enough money for this. :frowning:").submit();
-                    }
-                }
-                else if (ui.buyItem(item, item.getBuyValue()))
-                {
-                    ui.setUndo(new ItemPair(item, 1));
-                    channel.sendMessage("You succesfully bought a " + item.getHumanName() + " for " + item.getBuyValue() + Item.COINDIRIL + "s.").submit();
-                }
-                else
-                {
-                    channel.sendMessage("You don't have enough money for this. :frowning:").submit();
-                }
+                channel.sendMessage("You succesfully bought " + amt + " " + item.getHumanName() + "s for " + (item.getBuyValue() * amt) + Item.COINDIRIL + "s.").submit();
             }
             else
             {
-                channel.sendMessage("That item cannot be bought, sorry. :neutral_face:").submit();
+                channel.sendMessage("You don't have enough money for this. :frowning:").submit();
             }
+        }
+        else if (ui.buyItem(item, item.getBuyValue()))
+        {
+            channel.sendMessage("You succesfully bought a " + item.getHumanName() + " for " + item.getBuyValue() + Item.COINDIRIL + "s.").submit();
         }
         else
         {
-            channel.sendMessage("No such item.").submit();
+            channel.sendMessage("You don't have enough money for this. :frowning:").submit();
         }
     }
 
@@ -120,8 +133,8 @@ public final class CommandBuy implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.ECONOMY;
+        return CommandCategory.ECONOMY;
     }
 }

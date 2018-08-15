@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.command.CommandInterpreter;
 import cz.tefek.botdiril.core.ServerPreferences;
 import net.dv8tion.jda.core.entities.Message;
@@ -73,8 +73,8 @@ public final class CommandUsage implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.GENERAL;
+        return CommandCategory.GENERAL;
     }
 }

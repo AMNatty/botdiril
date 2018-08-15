@@ -38,7 +38,7 @@ public class Loot extends ArrayList<ItemPair>
 
     public Loot sortedByItemValue()
     {
-        this.sort((a, b) -> (int) Math.max(Math.min(b.getItem().getSellValue() * b.getAmount() - a.getItem().getSellValue() * a.getAmount(), Integer.MAX_VALUE), Integer.MIN_VALUE));
+        this.sort((a, b) -> b.getItem().canBeSold() ? Integer.MAX_VALUE : (int) Math.max(Math.min(b.getItem().getSellValue() * b.getAmount() - a.getItem().getSellValue() * a.getAmount(), Integer.MAX_VALUE), Integer.MIN_VALUE));
 
         return this;
     }

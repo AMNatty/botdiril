@@ -15,7 +15,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.core.BotdirilConfig;
 import cz.tefek.botdiril.userdata.UserStorage;
 import cz.tefek.botdiril.userdata.items.ItemPair;
@@ -42,12 +42,13 @@ public class CommandFullInventory implements Command
     {
         var channel = message.getTextChannel();
         var pid = message.getGuild().getMember(message.getAuthor());
-        var uid = message.getAuthor().getIdLong();
 
         if (params.length == 1)
         {
             pid = (Member) params[0];
         }
+
+        var uid = pid.getUser().getIdLong();
 
         if (!BotdirilConfig.S3_ENABLED)
         {
@@ -79,7 +80,9 @@ public class CommandFullInventory implements Command
         html.append(ui.getCoins());
         html.append("</h2>");
 
-        if (ui.getInventory().isEmpty())
+        var inv = ui.getInventory(-1);
+
+        if (inv.isEmpty())
         {
             html.append("<div class=\"empty\">This inventory is empty.<br>¯\\_(ツ)_/¯</div>");
         }
@@ -87,12 +90,17 @@ public class CommandFullInventory implements Command
         {
             html.append("<table><tr><th></th><th id=\"hname\">Item name</th><th id=\"hamount\">Amount</th><th id=\"hid\">Item ID</th><th id=\"hdescription\">Item Description</th><th id=\"hsell\">Sell Value</th><th id=\"hsellall\">Total Sell Value</th>");
 
-            for (ItemPair entry : ui.getInventory())
+            for (ItemPair entry : inv)
             {
                 var item = entry.getItem();
                 var amt = entry.getAmount();
 
                 html.append("<tr><td>");
+
+                if (item == null)
+                {
+                    continue;
+                }
 
                 if (item.hasIcon())
                 {
@@ -120,9 +128,9 @@ public class CommandFullInventory implements Command
                 html.append("</td><td class=\"description\">");
                 html.append(item.getDescription());
                 html.append("</td><td class=\"sell\">");
-                html.append(item.getSellValue());
+                html.append(item.canBeSold() ? item.getSellValue() : "-");
                 html.append("</td><td class=\"sellall\">");
-                html.append(item.getSellValue() * amt);
+                html.append(item.canBeSold() ? item.getSellValue() * amt : "-");
                 html.append("</td>");
             }
 
@@ -180,8 +188,8 @@ public class CommandFullInventory implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.ECONOMY;
+        return CommandCategory.ITEMS;
     }
 }

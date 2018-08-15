@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.userdata.UserStorage;
 import cz.tefek.botdiril.userdata.items.Item;
 import net.dv8tion.jda.core.entities.Message;
@@ -48,8 +48,8 @@ public final class CommandBalance implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.ECONOMY;
+        return CommandCategory.ECONOMY;
     }
 }

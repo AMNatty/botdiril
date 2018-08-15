@@ -1,13 +1,10 @@
 package cz.tefek.botdiril.command.s;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
-import cz.tefek.botdiril.userdata.UserInventory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.userdata.UserStorage;
 import cz.tefek.botdiril.userdata.items.Item;
 import net.dv8tion.jda.core.entities.Message;
@@ -29,8 +26,7 @@ public class CommandKek implements Command
     @Override
     public void interpret(Message message, Object... params)
     {
-        var comp = Comparator.comparingLong((UserInventory ui) -> ui.howManyOf(Item.getByID("kek"))).reversed();
-        var users = UserStorage.getAllUsers().values().stream().sorted(comp).limit(10).collect(Collectors.toList());
+        var users = UserStorage.getUsersSortedByAmountOfItem("kek", 10);
 
         var sb = new StringBuilder("**Top 10 " + Item.KEK + "est users (globally):**\n");
 
@@ -67,8 +63,8 @@ public class CommandKek implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.ECONOMY;
+        return CommandCategory.ECONOMY;
     }
 }

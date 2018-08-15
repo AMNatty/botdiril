@@ -1,157 +1,112 @@
 package cz.tefek.botdiril.userdata;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.json.JSONTokener;
-
-import cz.tefek.botdiril.userdata.items.Item;
+import cz.tefek.botdiril.sql.DB;
 
 public class UserStorage
 {
-    private static ConcurrentHashMap<Long, UserInventory> allUsers = new ConcurrentHashMap<>();
-
-    public static ConcurrentHashMap<Long, UserInventory> getAllUsers()
+    public static UserInventory getByID(long uid)
     {
-        return allUsers;
+        try
+        {
+            var c = DB.getConnection();
+
+            synchronized (c)
+            {
+                var st = c.prepareStatement("SELECT * FROM users WHERE userid=(?)");
+                st.setLong(1, uid);
+                var rs = st.executeQuery();
+
+                if (rs.next())
+                {
+                    return new UserInventory(rs.getLong("userid"), rs.getInt("pid"), c);
+                }
+                else
+                {
+                    var sta = c.prepareStatement("INSERT INTO users (userid) VALUES(?)");
+                    sta.setLong(1, uid);
+                    sta.execute();
+
+                    var psa = c.prepareStatement("SELECT * FROM users WHERE userid=(?)");
+                    psa.setLong(1, uid);
+                    var eq = psa.executeQuery();
+
+                    if (eq.next())
+                    {
+                        return new UserInventory(uid, eq.getInt("pid"), c);
+                    }
+
+                    return null;
+                }
+            }
+        }
+        catch (SQLException e)
+        {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
-    public static void serialize(UserInventory ui)
+    public static List<UserInventory> getUsersSortedByCoins(int limit)
     {
-        synchronized (ui)
+        var ul = new ArrayList<UserInventory>(limit);
+
+        var c = DB.getConnection();
+
+        synchronized (c)
         {
             try
             {
-                if (!new File("user").isDirectory())
+                var stmt = c.prepareStatement("SELECT users.pid, users.userid, coins.amount FROM users INNER JOIN coins ON users.pid = coins.userid ORDER BY amount DESC LIMIT ?");
+                stmt.setInt(1, limit);
+
+                var res = stmt.executeQuery();
+
+                while (res.next())
                 {
-                    new File("user").mkdir();
+                    ul.add(new UserInventory(res.getLong("users.userid"), res.getInt("users.pid"), c));
                 }
-
-                PrintWriter pw = new PrintWriter("user/u_" + ui.getUserID() + ".json");
-
-                JSONObject jo = new JSONObject();
-
-                jo.put("id", ui.getUserID());
-                jo.put("uuid-msb", ui.getUUID().getMostSignificantBits());
-                jo.put("uuid-lsb", ui.getUUID().getLeastSignificantBits());
-                jo.put("streak", ui.getStreak());
-                jo.put("coins", ui.getCoins());
-                jo.put("timers", ui.getTimers());
-                jo.put("properties", ui.getProperties());
-                var jar = new JSONArray();
-                ui.getInventoryRaw().forEach((k, v) -> {
-                    jar.put(new JSONObject().put("id", k).put("amount", v));
-                });
-                jo.put("items", jar);
-
-                pw.write(jo.toString());
-
-                pw.close();
             }
-            catch (IOException e)
+            catch (SQLException e)
             {
                 e.printStackTrace();
             }
         }
+
+        return ul;
     }
 
-    public static void deserializeAll()
+    public static List<UserInventory> getUsersSortedByAmountOfItem(String itemId, int limit)
     {
-        int i = 0;
+        var ul = new ArrayList<UserInventory>(limit);
 
-        var fldr = new File("user");
+        var c = DB.getConnection();
 
-        if (!fldr.isDirectory())
+        synchronized (c)
         {
-            fldr.mkdir();
-        }
-        else
-        {
-            for (File file : fldr.listFiles())
+            try
             {
-                if (file.canRead() && !file.isDirectory())
+                var stmt = c.prepareStatement("SELECT users.pid, users.userid, inventory.itemcount FROM users INNER JOIN inventory ON users.pid = inventory.userid WHERE itemid = ? ORDER BY itemcount DESC LIMIT ?");
+                stmt.setInt(1, UserInventory.getIDMappingForItem(itemId));
+                stmt.setInt(2, limit);
+
+                var res = stmt.executeQuery();
+
+                while (res.next())
                 {
-                    try
-                    {
-                        parseFile(new JSONTokener(new FileInputStream(file)));
-                        i++;
-                    }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                    }
+                    ul.add(new UserInventory(res.getLong("users.userid"), res.getInt("users.pid"), c));
                 }
+            }
+            catch (SQLException e)
+            {
+                e.printStackTrace();
             }
         }
 
-        System.out.printf("%d users successfully loaded.\n", i);
-    }
-
-    private static void parseFile(JSONTokener jsonTokener)
-    {
-        JSONObject jo = new JSONObject(jsonTokener);
-
-        long uid = jo.getLong("id");
-
-        long uuid_msb = jo.getLong("uuid-msb");
-        long uuid_lsb = jo.getLong("uuid-lsb");
-
-        int streak = jo.getInt("streak");
-
-        long balance = jo.getLong("coins");
-
-        var timers = (JSONObject) jo.opt("timers");
-        var properties = (JSONObject) jo.opt("properties");
-
-        var ui = new UserInventory(uid, new UUID(uuid_msb, uuid_lsb));
-        ui.setCoins(balance);
-        ui.setStreak(streak);
-        jo.getJSONArray("items").forEach(ji -> {
-            var i = (JSONObject) ji;
-            ui.addItem(Item.getByID(i.getString("id")), i.getLong("amount"));
-        });
-
-        if (timers != null)
-        {
-            var tnames = timers.keySet();
-
-            tnames.forEach(c -> {
-                ui.setTimer(c, timers.getLong(c));
-            });
-        }
-
-        if (properties != null)
-        {
-            var tnames = properties.keySet();
-
-            tnames.forEach(c -> {
-                ui.updateProperty(c, properties.getInt(c));
-            });
-        }
-
-        allUsers.put(uid, ui);
-    }
-
-    public static UserInventory getByID(long uid)
-    {
-        UserInventory ret;
-
-        if (!allUsers.containsKey(uid))
-        {
-            ret = new UserInventory(uid, UUID.randomUUID());
-            allUsers.put(uid, ret);
-        }
-        else
-        {
-            ret = allUsers.get(uid);
-        }
-
-        return ret;
+        return ul;
     }
 }

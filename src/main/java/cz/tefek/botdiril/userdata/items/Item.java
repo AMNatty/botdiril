@@ -9,6 +9,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import cz.tefek.botdiril.sql.DB;
 import cz.tefek.botdiril.userdata.items.card.Card;
 import cz.tefek.botdiril.userdata.items.card.CardCollection;
 import cz.tefek.botdiril.userdata.items.card.CardRarity;
@@ -25,8 +26,17 @@ import cz.tefek.botdiril.userdata.items.crate.ItemGoldenCrate;
 public class Item
 {
     public static final String COINDIRIL = "<:coindiril:446988933763563520>";
-    public static final String KEK = "<:keks:458631472572661761>";
+    public static final String KEK = "<:kek:472067325080633346>";
     public static final String GEM = "<:gemdiril:458631540952530944>";
+    public static final String BETA = "<:beta:471338452865253386>";
+    public static final String DUST = "<:dust:470276538009649179>";
+
+    public static final String REDGEM = "<a:redgem:470692296359280650>";
+    public static final String GREENGEM = "<a:greengem:470675656628240384>";
+    public static final String PURPLEGEM = "<a:purplegem:470686075661320193>";
+    public static final String BLACKGEM = "<a:blackgem:470668159704236033>";
+    public static final String RAINBOWGEM = "<a:rainbowgem:471071618429354006>";
+    public static final String BLUEGEM = "<a:bluegem:470672476880502784>";
 
     public static final List<Item> items = new ArrayList<>();
 
@@ -38,6 +48,7 @@ public class Item
     private long sellValue;
     private long buyValue;
     private String description;
+    private long dropValue;
 
     public static long powerN(long number, int power)
     {
@@ -63,14 +74,43 @@ public class Item
         items.add(new ItemCrateEpic());
         items.add(new ItemCrateLegendary());
 
-        var kek = new Item("kek", "kek").desc("The kekest of keks.").setEmoteIcon(Item.KEK).setBuyValue(3).setSellValue(1);
-        var gemdiril = new Item("gemdiril", "Gemdiril").setEmoteIcon(GEM).desc("A very rare gem of unknown value.").setSellValue(4096);
+        items.add(new Item("betabadge", "Beta Tester's Badge.").setDescription("Given to every user who used Botdiril since the beginning.").setEmoteIcon(BETA));
+
+        var dust = new Item("dust", "Arcane Dust").setDescription("Used for card enchanting.").setBuyValue(1).setDropValue(4).setEmoteIcon(DUST);
+
+        var redGem = new Item("infernalgem", "Infernal Gem").setDescription("Unleash the fury upon your foes.").setSellValue(2000).setEmoteIcon(REDGEM);
+        var greenGem = new Item("peacegem", "Gem of Peace").setDescription("Avoid conflicts.").setSellValue(2000).setEmoteIcon(GREENGEM);
+
+        var blueGem = new Item("balancegem", "Gem of Equlibrium").setDescription("Remove any differences.").setSellValue(10000).setEmoteIcon(BLUEGEM);
+        var purpleGem = new Item("imbalancegem", "Gem of Imbalance").setDescription("The source of imbalance permeating the universe.").setSellValue(10000).setEmoteIcon(PURPLEGEM);
+
+        var rainbowGem = new Item("ordergem", "Gem of Order").setDescription("Natural enemy of chaos.").setSellValue(50000).setEmoteIcon(RAINBOWGEM);
+        var blackGem = new Item("chaosgem", "Chaos Gem").setDescription("The source of all chaos.").setSellValue(50000).setEmoteIcon(BLACKGEM);
+
+        items.add(redGem);
+        CrateDrops.drops.add(new ItemDropPair(redGem, 100_000_000L));
+        items.add(greenGem);
+        CrateDrops.drops.add(new ItemDropPair(greenGem, 100_000_000L));
+        items.add(blueGem);
+        CrateDrops.drops.add(new ItemDropPair(blueGem, 20_000_000L));
+        items.add(purpleGem);
+        CrateDrops.drops.add(new ItemDropPair(purpleGem, 20_000_000L));
+        items.add(rainbowGem);
+        CrateDrops.drops.add(new ItemDropPair(rainbowGem, 4_000_000L));
+        items.add(blackGem);
+        CrateDrops.drops.add(new ItemDropPair(blackGem, 4_000_000L));
+
+        items.add(dust);
+
+        var kek = new Item("kek", "kek").desc("The kekest of keks.").setEmoteIcon(Item.KEK).setBuyValue(3).setSellValue(2).setDropValue(15);
+        var gemdiril = new Item("gemdiril", "Gemdiril").setEmoteIcon(GEM).desc("A very rare gem of unknown value.").setDropValue(80000);
 
         items.add(kek);
         items.add(gemdiril);
 
         CrateDrops.drops.add(new ItemDropPair(kek, 100_000_000_000L));
-        CrateDrops.drops.add(new ItemDropPair(gemdiril, 500_000L));
+        CrateDrops.drops.add(new ItemDropPair(gemdiril, 2_000_000L));
+        // CrateDrops.drops.add(new ItemDropPair(dust, 5_000_000_000_000L));
 
         try
         {
@@ -84,6 +124,7 @@ public class Item
                     var rarity = CardRarity.values()[co.getInt("rarity")];
                     var ic = new ItemCard(new Card(co.getString("id"), co.getString("name"), rarity), con);
                     ic.setEmoteIcon(rarity.getIcon());
+                    ic.setDropValue(ic.getSellValue() * 75);
 
                     var mod = Math.max(con.stream().mapToInt(CardCollection::getOneIn).reduce(1, (a, b) -> a * b), 1);
                     var cols = Arrays.stream(CardCollection.values()).mapToLong(CardCollection::getOneIn).reduce(1, (a, b) -> a * b);
@@ -105,6 +146,8 @@ public class Item
         {
             e.printStackTrace();
         }
+
+        DB.initItems();
     }
 
     public static Item getByID(String iid)
@@ -117,11 +160,16 @@ public class Item
         this.id = id;
         this.humanName = humanName;
         this.buyValue = -1;
+        this.sellValue = -1;
+        this.dropValue = 0;
     }
 
     public Item setSellValue(long sellValue)
     {
         this.sellValue = sellValue;
+
+        if (this.dropValue == 0)
+            this.dropValue = this.sellValue * 10;
 
         return this;
     }
@@ -129,6 +177,11 @@ public class Item
     public boolean canBeBought()
     {
         return buyValue > 0;
+    }
+
+    public boolean canBeSold()
+    {
+        return sellValue >= 0;
     }
 
     public Item desc(String description)
@@ -187,9 +240,11 @@ public class Item
         return humanName;
     }
 
-    public void setDescription(String description)
+    public Item setDescription(String description)
     {
         this.description = description;
+
+        return this;
     }
 
     protected void setID(String id)
@@ -215,5 +270,17 @@ public class Item
     public int hashCode()
     {
         return this.getID().hashCode();
+    }
+
+    public Item setDropValue(long dropValue)
+    {
+        this.dropValue = dropValue;
+
+        return this;
+    }
+
+    public long getDropValue()
+    {
+        return this.dropValue;
     }
 }

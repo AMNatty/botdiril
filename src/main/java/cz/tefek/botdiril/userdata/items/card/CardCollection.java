@@ -2,7 +2,7 @@ package cz.tefek.botdiril.userdata.items.card;
 
 public enum CardCollection
 {
-    FOIL(1000, 1, 20), GOLDEN(0, 5, 60), SHINY(1000, 4, 50);
+    FOIL(100, 1, 200), GOLDEN(0, 5, 600), SHINY(250, 4, 500);
 
     private int flatbonus;
     private int multiplierbonus;

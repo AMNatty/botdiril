@@ -4,10 +4,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.userdata.UserStorage;
 import cz.tefek.botdiril.userdata.items.Item;
-import cz.tefek.botdiril.userdata.items.ItemPair;
 import net.dv8tion.jda.core.entities.Message;
 
 public final class CommandSell implements Command
@@ -50,36 +49,40 @@ public final class CommandSell implements Command
         }
 
         var item = Item.getByID((String) params[0]);
+
+        if (item == null)
+        {
+            channel.sendMessage("No such item.").submit();
+            return;
+        }
+
+        if (!item.canBeSold())
+        {
+            channel.sendMessage("That item cannot be sold, sorry.").submit();
+            return;
+        }
+
         var ui = UserStorage.getByID(message.getAuthor().getIdLong());
 
-        if (item != null)
+        if (amt > 1)
         {
-            if (amt > 1)
+            if (ui.sellItems(item, item.getSellValue(), amt))
             {
-                if (ui.sellItems(item, item.getSellValue(), amt))
-                {
-                    ui.setUndo(new ItemPair(item, -amt));
-                    channel.sendMessage("You succesfully sold " + amt + " " + item.getHumanName() + "s for " + (item.getSellValue() * amt) + Item.COINDIRIL + "s.").submit();
-                }
-                else
-                {
-                    channel.sendMessage("You don't have this many items. :frowning:").submit();
-                }
-
-            }
-            else if (ui.sellItem(item, item.getSellValue()))
-            {
-                ui.setUndo(new ItemPair(item, -1));
-                channel.sendMessage("You succesfully sold a " + item.getHumanName() + " for " + item.getSellValue() + Item.COINDIRIL + "s.").submit();
+                channel.sendMessage("You succesfully sold " + amt + " " + item.getHumanName() + "s for " + (item.getSellValue() * amt) + Item.COINDIRIL + "s.").submit();
             }
             else
             {
                 channel.sendMessage("You don't have this many items. :frowning:").submit();
             }
+
+        }
+        else if (ui.sellItem(item, item.getSellValue()))
+        {
+            channel.sendMessage("You succesfully sold a " + item.getHumanName() + " for " + item.getSellValue() + Item.COINDIRIL + "s.").submit();
         }
         else
         {
-            channel.sendMessage("No such item.").submit();
+            channel.sendMessage("You don't have this many items. :frowning:").submit();
         }
     }
 
@@ -114,8 +117,8 @@ public final class CommandSell implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.ECONOMY;
+        return CommandCategory.ECONOMY;
     }
 }

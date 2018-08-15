@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.userdata.UserStorage;
 import cz.tefek.botdiril.userdata.items.Item;
 import cz.tefek.botdiril.userdata.items.card.ItemCard;
@@ -41,18 +41,22 @@ public final class CommandInventory implements Command
         eb.setTitle("Inventory of " + pid.getEffectiveName() + ", showing max 12 results.");
         eb.setFooter("Please note that special items like cards do not appear here.\nFor a complete list of your items, please use the command `fullinventory`.", null);
 
-        if (ui.getInventory().isEmpty())
+        var inv = ui.getInventoryFiltered(12, Arrays.asList(ItemCard.class.getSimpleName()));
+
+        if (inv.isEmpty())
         {
             eb.addField("This inventory is empty.", "¯\\_(ツ)_/¯", false);
         }
         else
         {
-            ui.getInventory().stream().filter(i -> {
-                var f = i.getItem() instanceof ItemCard;
-                return !f;
-            }).limit(12).forEach(c -> {
+            inv.forEach(c -> {
                 var item = c.getItem();
                 var amt = c.getAmount();
+
+                if (item == null)
+                {
+                    return;
+                }
 
                 var title = new StringBuilder();
 
@@ -68,10 +72,13 @@ public final class CommandInventory implements Command
                 sub.append(item.getID());
                 sub.append("\n**Amount:** ");
                 sub.append(amt);
-                sub.append("\n**One sells for:** ");
-                sub.append(item.getSellValue());
-                sub.append(" ");
-                sub.append(Item.COINDIRIL);
+                if (item.canBeSold())
+                {
+                    sub.append("\n**One sells for:** ");
+                    sub.append(item.getSellValue());
+                    sub.append(" ");
+                    sub.append(Item.COINDIRIL);
+                }
 
                 eb.addField(title.toString(), sub.toString(), true);
             });
@@ -105,8 +112,8 @@ public final class CommandInventory implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.ECONOMY;
+        return CommandCategory.ITEMS;
     }
 }

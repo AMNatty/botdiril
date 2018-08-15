@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.json.JSONWriter;
@@ -63,9 +64,33 @@ public class Persistency
             long uuid_lsb = jo.getLong("uuid-lsb");
             long uuid_msb = jo.getLong("uuid-msb");
             int volume = jo.optInt("music-volume", 50);
+            var sus = jo.optJSONArray("superuser-roles");
+            var suc = jo.optLong("superuser-printchannel", -1);
 
             sc = new ServerConfig(serverID, new UUID(uuid_msb, uuid_lsb), prefix);
             sc.setVolume(volume);
+
+            if (sus != null)
+            {
+                var arl = new ArrayList<Long>();
+
+                for (var object : sus)
+                {
+                    if (object instanceof Long)
+                    {
+                        arl.add((Long) object);
+                    }
+                }
+
+                sc.addAllSuperUserRoles(arl);
+            }
+
+            System.out.println(serverID + " :: " + suc);
+
+            if (suc != -1)
+            {
+                sc.setReportChannel(suc);
+            }
         }
         else
         {
@@ -93,7 +118,7 @@ public class Persistency
             {
                 PrintWriter pw = new PrintWriter("guilds/g_" + sc.getID() + ".json");
 
-                JSONObject jo = new JSONObject();
+                var jo = new JSONObject();
 
                 jo.put("gid", sc.getID());
 
@@ -105,6 +130,14 @@ public class Persistency
                     jo.put("uuid-lsb", sc.getUUID().getLeastSignificantBits());
                     jo.put("prefix", sc.getPrefix());
                     jo.put("music-volume", sc.getVolume());
+                    var jar = new JSONArray();
+                    jar.put(sc.getAllSuperUseredRoles());
+                    jo.put("superuser-roles", jar);
+                    var rc = sc.getReportChannelID();
+                    if (rc != -1)
+                    {
+                        jo.put("superuser-printchannel", rc);
+                    }
                 }
 
                 pw.write(JSONWriter.valueToString(jo));

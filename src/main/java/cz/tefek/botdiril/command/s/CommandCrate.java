@@ -7,7 +7,7 @@ import java.util.Random;
 import org.apache.commons.math3.random.RandomDataGenerator;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.userdata.UserStorage;
 import cz.tefek.botdiril.userdata.items.AmountParser;
 import cz.tefek.botdiril.userdata.items.Item;
@@ -130,21 +130,20 @@ public class CommandCrate implements Command
         for (long i = 0; i < amt; i++)
         {
             lootCoins += ic.generateCoins(rdg);
-            ui.addItemUnsafe(chest, -1);
+            ui.addItem(chest, -1);
         }
 
         ic.generateLoots(rdg, loot, amt);
 
+        var estVal = loot.stream().mapToLong(ip -> ip.getItem().getDropValue() * ip.getAmount()).sum() / 10 + lootCoins;
+
         loot.sortedByItemValue();
 
         loot.forEach(c -> {
-            ui.addItemUnsafe(c.getItem(), c.getAmount());
+            ui.addItem(c.getItem(), c.getAmount());
         });
 
         ui.addCoins(lootCoins);
-
-        // Just in case
-        ui.serialize();
 
         var sb = new StringBuilder();
         sb.append("**You open the crate(s) and find the following stuff (showing max 24 different items):**\n");
@@ -160,6 +159,8 @@ public class CommandCrate implements Command
             sb.append(c.getItem().getHumanName());
             sb.append("\n");
         });
+
+        sb.append("Estimated total value: " + estVal + " " + Item.COINDIRIL);
 
         message.getTextChannel().sendMessage(sb.toString()).submit();
     }
@@ -194,8 +195,8 @@ public class CommandCrate implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.ECONOMY;
+        return CommandCategory.GAMBLING;
     }
 }

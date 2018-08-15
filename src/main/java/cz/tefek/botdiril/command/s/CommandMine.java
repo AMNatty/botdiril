@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Random;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.userdata.UserStorage;
 import cz.tefek.botdiril.userdata.items.Item;
 import net.dv8tion.jda.core.entities.Message;
@@ -30,7 +30,7 @@ public class CommandMine implements Command
     {
         var ui = UserStorage.getByID(message.getMember().getUser().getIdLong());
 
-        var t = ui.useTimer("mine", 1_500_000);
+        var t = ui.useTimer("mine", 120_000);
 
         var rand = new Random();
 
@@ -92,7 +92,7 @@ public class CommandMine implements Command
                 keks = 8;
                 message.getTextChannel().sendMessage("Not bad. You found " + coins + " " + Item.COINDIRIL + "s and " + keks + " " + Item.KEK + "s.").submit();
             }
-            else if (reward > 1000)
+            else if (reward > 500)
             {
                 coins += 20;
 
@@ -101,14 +101,14 @@ public class CommandMine implements Command
             }
             else
             {
-                keks = 1;
-                message.getTextChannel().sendMessage("You found nothing. FeelsBadMan. Here is a " + Item.KEK + " so you don't feel that bad.").submit();
+                keks = 10;
+                message.getTextChannel().sendMessage("You found 10 " + Item.KEK + "s.").submit();
             }
         }
         else
         {
             t /= 1000;
-            message.getTextChannel().sendMessage("You still need to wait " + (t / 3_600) + " hours, " + (t % 3_600 / 60) + " minutes and " + (t % 60) + " seconds to mine.").submit();
+            message.getTextChannel().sendMessage("You still need to wait " + (t % 3_600 / 60) + " minutes and " + (t % 60) + " seconds to mine.").submit();
         }
 
         ui.addCoins(coins);
@@ -135,8 +135,8 @@ public class CommandMine implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.ECONOMY;
+        return CommandCategory.GAMBLING;
     }
 }

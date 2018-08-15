@@ -13,7 +13,7 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
 import net.dv8tion.jda.core.EmbedBuilder;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.Message;
@@ -184,8 +184,8 @@ public final class CommandLoLItem implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.LEAGUE;
+        return CommandCategory.LEAGUE;
     }
 }

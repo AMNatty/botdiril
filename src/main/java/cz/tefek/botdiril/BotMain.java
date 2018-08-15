@@ -1,9 +1,6 @@
 package cz.tefek.botdiril;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
@@ -16,7 +13,8 @@ import cz.tefek.botdiril.command.CommandInitializer;
 import cz.tefek.botdiril.core.Botdiril;
 import cz.tefek.botdiril.core.BotdirilConfig;
 import cz.tefek.botdiril.core.ServerPreferences;
-import cz.tefek.botdiril.userdata.UserStorage;
+import cz.tefek.botdiril.core.server.ChannelCache;
+import cz.tefek.botdiril.sql.DB;
 import cz.tefek.botdiril.userdata.items.Item;
 
 public class BotMain
@@ -28,17 +26,26 @@ public class BotMain
 
     public static void main(String[] args) throws LoginException, InterruptedException, IOException
     {
-        System.setProperty("javax.net.ssl.trustStore", System.getProperty("java.home") + "/lib/security/cacerts");
-
         if (!BotdirilConfig.load())
         {
             System.err.println("ERROR WHILE LOADING CONFIG. ABORTING.");
             return;
         }
 
-        var local = Arrays.stream(args).filter(c -> c.equalsIgnoreCase("local")).findAny().isPresent();
+        DB.open();
 
-        backup();
+        try
+        {
+            DB.init();
+            ChannelCache.syncFromSQL();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        var local = Arrays.stream(args).filter(c -> c.equalsIgnoreCase("local")).findAny().isPresent();
 
         if (!local)
         {
@@ -55,32 +62,11 @@ public class BotMain
         System.out.println("Running at " + IP + ":" + PORT);
 
         Item.loadFirst();
-        UserStorage.deserializeAll();
         ServerPreferences.initialize();
         CommandInitializer.initialize();
 
         botdiril = new Botdiril();
         botdiril.build();
-    }
-
-    private static void backup() throws IOException
-    {
-        var bf = new File("backup/" + System.currentTimeMillis());
-        bf.mkdirs();
-
-        var ud = new File("user");
-
-        if (ud.isDirectory())
-        {
-            for (File f : ud.listFiles())
-            {
-                var fos = new FileOutputStream(new File(bf, f.getName()));
-                var fis = new FileInputStream(f);
-                fos.write(fis.readAllBytes());
-                fis.close();
-                fos.close();
-            }
-        }
     }
 
     public static Botdiril getBotdiril()

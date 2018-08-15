@@ -1,10 +1,15 @@
 package cz.tefek.botdiril.core;
 
+import java.util.EnumSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 import cz.tefek.botdiril.BotMain;
+import cz.tefek.botdiril.command.ParseChannel;
 import cz.tefek.botdiril.core.server.ServerConfig;
 import cz.tefek.botdiril.persistent.Persistency;
+import net.dv8tion.jda.core.Permission;
+import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.TextChannel;
 
 public class ServerPreferences
@@ -18,21 +23,54 @@ public class ServerPreferences
         System.out.printf("%d guilds loaded.\n", servers.size());
     }
 
-    public static void wipePreviousConfig(TextChannel textChannel)
+    public static void wipePreviousConfig(Guild g)
     {
-        long id = textChannel.getGuild().getIdLong();
+        var scOld = getServerByID(g.getIdLong());
 
-        Persistency.deleteServer(id);
-        if (guilds.remove(getServerByID(id)))
+        var rc = scOld == null ? false : scOld.hasReportChannel();
+
+        Persistency.deleteServer(g.getIdLong());
+
+        if (!rc)
         {
-            textChannel.sendMessage("Hello once again! Before using any commands please initialize me via `botdiril <prefix>`. Don't worry, you can change the prefix later via `botdiril prefix <prefix>`.").complete();
+            var tco = g.getController().createTextChannel("botdiril");
+
+            var adminRoles = g.getRoles().stream().filter(r -> r.hasPermission(Permission.ADMINISTRATOR)).collect(Collectors.toList());
+
+            for (var role : adminRoles)
+            {
+                tco = tco.addPermissionOverride(role, Permission.getRaw(EnumSet.of(Permission.MESSAGE_READ, Permission.MESSAGE_WRITE)), 0);
+            }
+
+            tco = tco.addPermissionOverride(g.getPublicRole(), 0, Permission.getRaw(EnumSet.of(Permission.MESSAGE_READ, Permission.MESSAGE_WRITE)));
+
+            var tc = (TextChannel) tco.complete();
+
+            if (guilds.remove(scOld))
+            {
+                tc.sendMessage("Hello once again! Before using any commands please initialize me via `botdiril <prefix>`. Don't worry, you can change the prefix later via `botdiril prefix <prefix>`.").complete();
+            }
+            else
+            {
+                tc.sendMessage("Hello! This is Botdiril! Before using any commands please initialize me via `botdiril <prefix>`. Don't worry, you can change the prefix later via `botdiril prefix <prefix>`.").complete();
+            }
+
+            var sc = new ServerConfig(g.getIdLong());
+            sc.setReportChannel(tc.getIdLong());
+
+            guilds.add(sc);
         }
         else
         {
-            textChannel.sendMessage("Hello! This is Botdiril! Before using any commands please initialize me via `botdiril <prefix>`. Don't worry, you can change the prefix later via `botdiril prefix <prefix>`.").complete();
-        }
+            var sc = new ServerConfig(g.getIdLong());
+            var tc = sc.getReportChannel(g);
 
-        guilds.add(new ServerConfig(id));
+            guilds.remove(scOld);
+
+            tc.sendMessage("Hello! This is Botdiril! Before using any commands please initialize me via `botdiril <prefix>`. Don't worry, you can change the prefix later via `botdiril prefix <prefix>`.").complete();
+
+            guilds.add(sc);
+        }
     }
 
     public static ServerConfig getServerByID(long id)
@@ -42,11 +80,11 @@ public class ServerPreferences
         return server.isPresent() ? server.get() : null;
     }
 
-    public static void addServer(TextChannel textChannel)
+    public static void addServer(Guild g)
     {
-        long id = textChannel.getGuild().getIdLong();
+        long id = g.getIdLong();
 
-        wipePreviousConfig(textChannel);
+        wipePreviousConfig(g);
         Persistency.serializeServer(getServerByID(id));
         System.out.printf("Joined guild: %d\n", id);
     }
@@ -100,5 +138,20 @@ public class ServerPreferences
         fixPrefix_internal(channel, prefix);
 
         channel.sendMessage("The following prefix has been set: " + prefix).complete();
+    }
+
+    public static void setChannel(TextChannel channel, String chStr)
+    {
+        var g = channel.getGuild();
+        var sc = getServerByID(g.getIdLong());
+
+        var tc = ParseChannel.parse(channel, chStr);
+
+        if (tc != null)
+        {
+            sc.setReportChannel(tc.getIdLong());
+            Persistency.serializeServer(sc);
+            channel.sendMessage("Print channel updated to " + tc.getAsMention() + "!").submit();
+        }
     }
 }

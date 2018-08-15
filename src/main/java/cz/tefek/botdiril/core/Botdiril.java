@@ -33,4 +33,9 @@ public class Botdiril
     {
         return jda;
     }
+
+    public final String getUniversalPrefix()
+    {
+        return "botdiril.";
+    }
 }

@@ -1,13 +1,10 @@
 package cz.tefek.botdiril.command.s;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
-import cz.tefek.botdiril.userdata.UserInventory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.userdata.UserStorage;
 import cz.tefek.botdiril.userdata.items.Item;
 import net.dv8tion.jda.core.entities.Message;
@@ -29,7 +26,7 @@ public class CommandRich implements Command
     @Override
     public void interpret(Message message, Object... params)
     {
-        var users = UserStorage.getAllUsers().values().stream().sorted(Comparator.comparing(UserInventory::getCoins).reversed()).collect(Collectors.toList());
+        var users = UserStorage.getUsersSortedByCoins(10);
 
         var sb = new StringBuilder("**Top 10 richest users (globally):**\n");
 
@@ -66,8 +63,8 @@ public class CommandRich implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.ECONOMY;
+        return CommandCategory.ECONOMY;
     }
 }

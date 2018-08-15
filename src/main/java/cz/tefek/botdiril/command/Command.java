@@ -16,7 +16,7 @@ public interface Command
 
     public String description();
 
-    public CommandCathegory getCathegory();
+    public CommandCategory getCategory();
 
     public default boolean hasOpenEnd()
     {

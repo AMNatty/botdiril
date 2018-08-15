@@ -1,10 +1,12 @@
 package cz.tefek.botdiril.userdata;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import cz.tefek.botdiril.userdata.items.Item;
@@ -12,248 +14,49 @@ import cz.tefek.botdiril.userdata.items.ItemPair;
 
 public class UserInventory
 {
+    private static final Map<Integer, String> itemMappings = new HashMap<>();
+    private static final Map<String, Integer> revItemMappings = new HashMap<>();
 
+    public static void loadMappings(Connection c)
+    {
+        synchronized (c)
+        {
+            try
+            {
+                var rs = c.prepareStatement("SELECT * FROM itemlookup").executeQuery();
+
+                while (rs.next())
+                {
+                    var id = rs.getInt("itemid");
+                    var name = rs.getString("itemname");
+
+                    itemMappings.put(id, name);
+                    revItemMappings.put(name, id);
+                }
+            }
+            catch (SQLException e)
+            {
+                e.printStackTrace();
+            }
+        }
+
+        System.out.printf("%d item entries loaded.\n", itemMappings.size());
+    }
+
+    public static int getIDMappingForItem(String id)
+    {
+        return revItemMappings.get(id);
+    }
+
+    private final Connection c;
     private final long user;
-    private AtomicLong coins = new AtomicLong(0);
-    private Inventory inventory = new Inventory();
-    private UUID uuid;
-    private ConcurrentHashMap<String, Long> timers = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<String, Integer> properties = new ConcurrentHashMap<>();
-    private int luckyStreak = 0;
-    private boolean luckyStreakEnabled = false;
-    private int streak;
-    private ItemPair undo = null;
+    private final int id;
 
-    public UserInventory(long mid, UUID uuid)
+    public UserInventory(long mid, int id, Connection connection)
     {
         this.user = mid;
-        this.uuid = uuid;
-    }
-
-    public void setStreak(int streak)
-    {
-        this.streak = streak;
-    }
-
-    public void setCoins(long coins)
-    {
-        this.coins.set(coins);
-
-        this.serialize();
-    }
-
-    public void addCoins(long coins)
-    {
-        this.coins.addAndGet(coins);
-
-        this.serialize();
-    }
-
-    public void addItem(Item i)
-    {
-        if (inventory.containsKey(i))
-            inventory.replace(i, inventory.get(i) + 1);
-        else
-            inventory.put(i, 1L);
-
-        this.serialize();
-    }
-
-    public void addItem(Item i, long add)
-    {
-        if (inventory.containsKey(i))
-            inventory.replace(i, inventory.get(i) + add);
-        else
-            inventory.put(i, add);
-
-        if (inventory.get(i) == 0)
-            inventory.remove(i);
-
-        this.serialize();
-    }
-
-    public void addItemUnsafe(Item i, long add)
-    {
-        if (inventory.containsKey(i))
-            inventory.replace(i, inventory.get(i) + add);
-        else
-            inventory.put(i, add);
-
-        if (inventory.get(i) == 0)
-            inventory.remove(i);
-    }
-
-    public ConcurrentHashMap<String, Integer> getProperties()
-    {
-        return properties;
-    }
-
-    public int getProperty(String id)
-    {
-        return properties.get(id);
-    }
-
-    public void updateProperty(String id, int value)
-    {
-        if (properties.containsKey(id))
-        {
-            properties.replace(id, value);
-        }
-        else
-        {
-            properties.put(id, value);
-        }
-    }
-
-    public int incrAndGetProperty(String id)
-    {
-        if (!properties.containsKey(id))
-        {
-            properties.put(id, 0);
-        }
-
-        var nval = properties.get(id) + 1;
-
-        properties.replace(id, nval);
-
-        return nval;
-    }
-
-    public UUID getUUID()
-    {
-        return uuid;
-    }
-
-    public void setInventory(Inventory inventory)
-    {
-        this.inventory = inventory;
-    }
-
-    public Set<ItemPair> getInventory()
-    {
-        return inventory.entrySet().stream().map(e -> new ItemPair(Item.getByID(e.getKey()), e.getValue())).collect(Collectors.toSet());
-    }
-
-    public Map<String, Long> getInventoryRaw()
-    {
-        return inventory;
-    }
-
-    public boolean sellItem(Item i, long money)
-    {
-        if (!inventory.containsKey(i) || inventory.get(i) <= 0)
-            return false;
-
-        if (inventory.get(i) == 1)
-            inventory.remove(i);
-        else
-            inventory.replace(i, inventory.get(i) - 1);
-
-        this.coins.getAndAdd(money);
-
-        this.serialize();
-
-        return true;
-    }
-
-    public boolean buyItem(Item i, long money)
-    {
-        if (this.coins.get() < money)
-            return false;
-
-        if (inventory.containsKey(i))
-            inventory.replace(i, inventory.get(i) + 1);
-        else
-            inventory.put(i, 1L);
-
-        this.coins.getAndAdd(-money);
-
-        this.serialize();
-
-        return true;
-    }
-
-    public boolean hasItem(Item i, int amt)
-    {
-        return howManyOf(i) >= amt;
-    }
-
-    public long howManyOf(Item i)
-    {
-        if (!inventory.containsKey(i))
-            return 0;
-
-        return inventory.get(i);
-    }
-
-    public boolean hasItem(Item i)
-    {
-        return hasItem(i, 1);
-    }
-
-    public boolean sellItems(Item i, long money, long amt)
-    {
-        if (!inventory.containsKey(i) || inventory.get(i) <= 0)
-            return false;
-
-        if (inventory.get(i) < amt)
-            return false;
-
-        if (inventory.get(i) == amt)
-            inventory.remove(i);
-        else
-            inventory.replace(i, inventory.get(i) - amt);
-
-        this.coins.getAndAdd(money * amt);
-
-        this.serialize();
-
-        return true;
-    }
-
-    public boolean buyItems(Item i, long money, long amt)
-    {
-        if (this.coins.get() < money * amt)
-            return false;
-
-        if (inventory.containsKey(i))
-            inventory.replace(i, inventory.get(i) + amt);
-        else
-            inventory.put(i, amt);
-
-        this.coins.getAndAdd(-money * amt);
-
-        this.serialize();
-
-        return true;
-    }
-
-    public void serialize()
-    {
-        // Any action that requires an inventory update resets the undo command
-        undo = null;
-
-        UserStorage.serialize(this);
-    }
-
-    public void setUndo(ItemPair undo)
-    {
-        this.undo = undo;
-    }
-
-    public ItemPair getUndo()
-    {
-        return undo;
-    }
-
-    public boolean canUndo()
-    {
-        return undo != null;
-    }
-
-    public long getCoins()
-    {
-        return coins.get();
+        this.id = id;
+        this.c = connection;
     }
 
     public long getUserID()
@@ -261,111 +64,499 @@ public class UserInventory
         return user;
     }
 
-    public int getStreak()
+    public int getUID()
     {
-        return streak;
+        return id;
     }
 
-    public long useTimer(String tid, long timeout)
+    public int getOrCreateProp(String id, int defaultValue)
     {
-        if (timers.get(tid) != null)
+        synchronized (c)
         {
-            if (System.currentTimeMillis() > timers.get(tid))
+            try
             {
-                timers.replace(tid, System.currentTimeMillis() + timeout);
+                var stmt = c.prepareStatement("SELECT * FROM properties WHERE userid=(?) AND propid=(?)");
+                stmt.setInt(1, this.id);
+                stmt.setString(2, id);
+                var res = stmt.executeQuery();
 
-                this.serialize();
+                if (res.next())
+                {
+                    return res.getInt("propvalue");
+                }
+                else
+                {
+                    var ust = c.prepareStatement("INSERT INTO properties (userid, propid, propvalue) VALUES (?, ?, ?)");
+                    ust.setInt(1, this.id);
+                    ust.setString(2, id);
+                    ust.setInt(3, defaultValue);
+                    ust.executeUpdate();
 
-                return -1;
+                    return defaultValue;
+                }
             }
-
-            return timers.get(tid) - System.currentTimeMillis();
+            catch (SQLException e)
+            {
+                e.printStackTrace();
+            }
         }
 
-        timers.put(tid, System.currentTimeMillis() + timeout);
-
-        this.serialize();
-
-        return -1;
+        return defaultValue;
     }
 
-    public long checkTimer(String tid)
+    public void setOrCreateProp(String id, int value)
     {
-        if (timers.get(tid) != null)
+        synchronized (c)
         {
-            if (System.currentTimeMillis() > timers.get(tid))
+            try
             {
-                return -1;
-            }
+                var stmt = c.prepareStatement("SELECT * FROM properties WHERE userid=(?) AND propid=(?)");
+                stmt.setInt(1, this.id);
+                stmt.setString(2, id);
+                var res = stmt.executeQuery();
 
-            return timers.get(tid) - System.currentTimeMillis();
+                if (res.next())
+                {
+                    var ust = c.prepareStatement("UPDATE properties SET propvalue=(?) WHERE userid=(?) AND propid=(?)");
+                    ust.setInt(1, value);
+                    ust.setInt(2, this.id);
+                    ust.setString(3, id);
+                    ust.execute();
+                }
+                else
+                {
+                    var ust = c.prepareStatement("INSERT INTO properties (userid, propid, propvalue) VALUES (?, ?, ?)");
+                    ust.setInt(1, this.id);
+                    ust.setString(2, id);
+                    ust.setInt(3, value);
+                    ust.execute();
+                }
+            }
+            catch (SQLException e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public int incrAndGetProperty(String id)
+    {
+        int propVal = 0;
+
+        synchronized (c)
+        {
+            try
+            {
+                var stmt = c.prepareStatement("SELECT * FROM properties WHERE userid=(?) AND propid=(?)");
+                stmt.setInt(1, this.id);
+                stmt.setString(2, id);
+                var res = stmt.executeQuery();
+
+                if (res.next())
+                {
+                    propVal = res.getInt("propvalue");
+                    var ust = c.prepareStatement("UPDATE properties SET propvalue=(?) WHERE userid=(?) AND propid=(?)");
+                    ust.setInt(1, ++propVal);
+                    ust.setInt(2, this.id);
+                    ust.setString(3, id);
+                    ust.execute();
+                }
+                else
+                {
+                    var ust = c.prepareStatement("INSERT INTO properties (userid, propid, propvalue) VALUES (?, ?, ?)");
+                    ust.setInt(1, this.id);
+                    ust.setString(2, id);
+                    ust.setInt(3, propVal);
+                    ust.execute();
+                }
+            }
+            catch (SQLException e)
+            {
+                e.printStackTrace();
+            }
         }
 
-        return -1;
+        return propVal;
     }
 
-    public long useTimerOverride(String tid, long timeout)
+    public int getProperty(String id)
     {
-        if (timers.get(tid) != null)
+        return getOrCreateProp(id, 0);
+    }
+
+    public void setCoins(long coins)
+    {
+        synchronized (c)
         {
-            if (System.currentTimeMillis() > timers.get(tid))
+            try
             {
-                timers.replace(tid, System.currentTimeMillis() + timeout);
-
-                this.serialize();
-
-                return -1;
+                var st = c.prepareStatement("INSERT INTO coins (userid, amount) VALUES (?, ?) ON DUPLICATE KEY UPDATE amount=VALUES(?)");
+                st.setInt(1, this.id);
+                st.setLong(2, coins);
+                st.setLong(3, coins);
+                st.execute();
             }
+            catch (SQLException e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
 
-            timers.replace(tid, System.currentTimeMillis() + timeout);
-            return timers.get(tid) - System.currentTimeMillis();
+    public long getCoins()
+    {
+        try
+        {
+            var stmt = c.prepareStatement("SELECT * FROM coins WHERE userid=(?)");
+            stmt.setInt(1, this.id);
+            var res = stmt.executeQuery();
+
+            if (res.next())
+            {
+                return res.getLong("amount");
+            }
+            else
+            {
+                var ust = c.prepareStatement("INSERT INTO coins (userid, amount) VALUES (?, 0)");
+                ust.setInt(1, this.id);
+                ust.execute();
+
+                return 0;
+            }
+        }
+        catch (SQLException e)
+        {
+            e.printStackTrace();
         }
 
-        this.serialize();
-
-        timers.put(tid, System.currentTimeMillis() + timeout);
-
-        return -1;
+        return 0;
     }
 
-    public ConcurrentHashMap<String, Long> getTimers()
+    public void addCoins(long coins)
     {
-        return timers;
+        synchronized (c)
+        {
+            try
+            {
+                var st = c.prepareStatement("INSERT INTO coins (userid, amount) VALUES (?, ?) ON DUPLICATE KEY UPDATE `amount`=`amount`+?");
+                st.setInt(1, this.id);
+                st.setLong(2, coins);
+                st.setLong(3, coins);
+                st.execute();
+            }
+            catch (SQLException e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void addItem(Item i, long amount)
+    {
+        var rid = revItemMappings.get(i.getID());
+
+        synchronized (c)
+        {
+            try
+            {
+                var stmt = c.prepareStatement("SELECT * FROM inventory WHERE userid=(?) AND itemid=(?)");
+                stmt.setInt(1, this.id);
+                stmt.setInt(2, rid);
+                var res = stmt.executeQuery();
+
+                if (res.next())
+                {
+                    var ust = c.prepareStatement("UPDATE inventory SET `itemcount`=`itemcount` + ? WHERE userid=(?) AND itemid=(?)");
+                    ust.setLong(1, amount);
+                    ust.setInt(2, this.id);
+                    ust.setInt(3, rid);
+                    ust.execute();
+                }
+                else
+                {
+                    var ust = c.prepareStatement("INSERT INTO inventory (userid, itemid, itemcount) VALUES (?, ?, ?)");
+                    ust.setInt(1, this.id);
+                    ust.setInt(2, rid);
+                    ust.setLong(3, amount);
+                    ust.execute();
+                }
+            }
+            catch (SQLException e)
+            {
+                System.out.println(i.getID() + " : " + rid);
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public List<ItemPair> getInventory(int limit)
+    {
+        synchronized (c)
+        {
+            try
+            {
+                PreparedStatement stmt;
+
+                if (limit < 1)
+                {
+                    stmt = c.prepareStatement("SELECT inventory.itemcount, itemlookup.itemname, itemlookup.itemsellvalue FROM inventory INNER JOIN itemlookup ON inventory.itemid = itemlookup.itemid WHERE userid=(?) AND inventory.itemcount>0 ORDER BY itemlookup.itemsellvalue DESC");
+                    stmt.setInt(1, this.id);
+                }
+                else
+                {
+                    stmt = c.prepareStatement("SELECT inventory.itemcount, itemlookup.itemname, itemlookup.itemsellvalue FROM inventory INNER JOIN itemlookup ON inventory.itemid = itemlookup.itemid WHERE userid=(?) AND inventory.itemcount>0 ORDER BY itemlookup.itemsellvalue DESC LIMIT ?");
+                    stmt.setInt(1, this.id);
+                    stmt.setInt(2, limit);
+                }
+
+                var res = stmt.executeQuery();
+                var inv = new ArrayList<ItemPair>();
+
+                while (res.next())
+                {
+                    var strName = res.getString("itemname");
+                    var item = Item.getByID(strName);
+
+                    if (item == null)
+                    {
+                        System.err.println(strName + " is null item.");
+                        continue;
+                    }
+
+                    inv.add(new ItemPair(item, res.getLong("itemcount")));
+                }
+
+                return inv;
+            }
+            catch (SQLException e)
+            {
+                e.printStackTrace();
+            }
+        }
+
+        return null;
+    }
+
+    public List<ItemPair> getInventoryFiltered(int limit, List<String> filterOut)
+    {
+        synchronized (c)
+        {
+            try
+            {
+                PreparedStatement stmt;
+
+                if (limit < 1)
+                {
+                    stmt = c.prepareStatement("SELECT inventory.userid, inventory.itemcount, itemlookup.itemname, itemlookup.itemsellvalue FROM inventory INNER JOIN itemlookup ON inventory.itemid = itemlookup.itemid AND inventory.itemcount>0 WHERE userid=(?) AND itemtype NOT RLIKE ? ORDER BY itemlookup.itemsellvalue DESC");
+                    stmt.setInt(1, this.id);
+                    stmt.setString(2, filterOut.stream().collect(Collectors.joining("|")));
+                }
+                else
+                {
+                    stmt = c.prepareStatement("SELECT inventory.userid, inventory.itemcount, itemlookup.itemname, itemlookup.itemsellvalue FROM inventory INNER JOIN itemlookup ON inventory.itemid = itemlookup.itemid AND inventory.itemcount>0 WHERE userid=(?) AND itemtype NOT RLIKE ? ORDER BY itemlookup.itemsellvalue DESC LIMIT ?");
+                    stmt.setInt(1, this.id);
+                    stmt.setString(2, filterOut.stream().collect(Collectors.joining("|")));
+                    stmt.setInt(3, limit);
+                }
+
+                var res = stmt.executeQuery();
+                var inv = new ArrayList<ItemPair>();
+
+                while (res.next())
+                {
+                    var strName = res.getString("itemname");
+                    var item = Item.getByID(strName);
+
+                    if (item == null)
+                    {
+                        System.err.println(strName + " is null item.");
+                        continue;
+                    }
+
+                    inv.add(new ItemPair(item, res.getLong("itemcount")));
+                }
+
+                return inv;
+            }
+            catch (SQLException e)
+            {
+                e.printStackTrace();
+            }
+        }
+
+        return null;
+    }
+
+    public void addItem(Item i)
+    {
+        addItem(i, 1);
+    }
+
+    public boolean sellItem(Item i, long money)
+    {
+        return sellItems(i, money, 1);
+    }
+
+    public boolean buyItem(Item i, long money)
+    {
+        return this.buyItems(i, money, 1);
+    }
+
+    public boolean buyItems(Item i, long money, long amt)
+    {
+        if (this.getCoins() < money * amt)
+            return false;
+
+        addItem(i, amt);
+
+        addCoins(-money * amt);
+
+        return true;
+    }
+
+    public long howManyOf(Item i)
+    {
+        synchronized (c)
+        {
+            try
+            {
+                var stmt = c.prepareStatement("SELECT itemcount FROM inventory WHERE userid=(?) AND itemid=(?)");
+                stmt.setInt(1, this.id);
+                stmt.setInt(2, getIDMappingForItem(i.getID()));
+                var res = stmt.executeQuery();
+
+                if (res.next())
+                    return res.getLong("itemcount");
+            }
+            catch (SQLException e)
+            {
+                e.printStackTrace();
+            }
+        }
+
+        return 0;
+    }
+
+    public boolean sellItems(Item i, long money, long amt)
+    {
+        if (howManyOf(i) < amt)
+            return false;
+
+        addItem(i, -amt);
+        addCoins(money * amt);
+
+        return true;
+    }
+
+    public long getTimer(String timer)
+    {
+        synchronized (c)
+        {
+            try
+            {
+                var stmt = c.prepareStatement("SELECT * FROM timers WHERE userid=(?) AND timerid=(?)");
+                stmt.setInt(1, this.id);
+                stmt.setString(2, timer);
+                var res = stmt.executeQuery();
+
+                if (res.next())
+                    return res.getLong("timertime");
+            }
+            catch (SQLException e)
+            {
+                e.printStackTrace();
+            }
+        }
+
+        return 0;
     }
 
     public void setTimer(String tid, long timestamp)
     {
-        timers.put(tid, timestamp);
+        synchronized (c)
+        {
+            try
+            {
+                var stmt = c.prepareStatement("SELECT * FROM timers WHERE userid=(?) AND timerid=(?)");
+                stmt.setInt(1, this.id);
+                stmt.setString(2, tid);
+                var res = stmt.executeQuery();
+
+                if (res.next())
+                {
+                    var ust = c.prepareStatement("UPDATE timers SET `timertime`=? WHERE userid=(?) AND timerid=(?)");
+                    ust.setLong(1, timestamp);
+                    ust.setInt(2, this.id);
+                    ust.setString(3, tid);
+                    ust.execute();
+                }
+                else
+                {
+                    var ust = c.prepareStatement("INSERT INTO timers (userid, timertime, timerid) VALUES (?, ?, ?)");
+                    ust.setInt(1, this.id);
+                    ust.setLong(2, timestamp);
+                    ust.setString(3, tid);
+                    ust.execute();
+                }
+            }
+            catch (SQLException e)
+            {
+                e.printStackTrace();
+            }
+        }
     }
 
-    public int getLuckyStreak()
+    public long useTimer(String tid, long timeout)
     {
-        return luckyStreak;
+        var tt = getTimer(tid);
+
+        if (System.currentTimeMillis() > tt)
+        {
+            setTimer(tid, System.currentTimeMillis() + timeout);
+
+            return -1;
+        }
+
+        return tt - System.currentTimeMillis();
     }
 
-    public void incrStreak()
+    public long checkTimer(String tid)
     {
-        this.luckyStreak++;
+        var tt = getTimer(tid);
+
+        if (System.currentTimeMillis() > tt)
+        {
+            return -1;
+        }
+
+        return tt - System.currentTimeMillis();
     }
 
-    public void resetLuckyStreak()
+    // This differentiates in the fact that this overrides the time even when
+    // waiting
+    public long useTimerOverride(String tid, long timeout)
     {
-        this.luckyStreak = 0;
-        this.luckyStreakEnabled = false;
-    }
+        var tt = getTimer(tid);
 
-    public boolean isLuckyStreakEnabled()
-    {
-        return luckyStreakEnabled;
-    }
+        if (System.currentTimeMillis() > tt)
+        {
+            setTimer(tid, System.currentTimeMillis() + timeout);
 
-    public void setLuckyStreakEnabled(boolean luckyStreakEnabled)
-    {
-        this.luckyStreakEnabled = luckyStreakEnabled;
+            return -1;
+        }
+
+        setTimer(tid, System.currentTimeMillis() + timeout);
+
+        return tt - System.currentTimeMillis();
     }
 
     public void resetTimer(String id)
     {
-        timers.remove(id);
+        setTimer(id, 0);
+    }
+
+    public boolean hasItem(Item i)
+    {
+        return howManyOf(i) > 0;
     }
 }

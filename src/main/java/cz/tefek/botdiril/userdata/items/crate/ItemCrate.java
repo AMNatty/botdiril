@@ -21,7 +21,7 @@ public abstract class ItemCrate extends Item
         do
         {
             var i = CrateDrops.rollItem(this.getRngOffset(), rdg);
-            cval += i.getSellValue();
+            cval += i.getDropValue();
             loot.incrementItem(i);
         }
         while (cval < value);
@@ -29,7 +29,7 @@ public abstract class ItemCrate extends Item
         return loot;
     }
 
-    public void generateLoots(RandomDataGenerator rdg, Loot loots, long times)
+    public long generateLoots(RandomDataGenerator rdg, Loot loots, long times)
     {
         var value = 0L;
         var rngoffset = this.getRngOffset();
@@ -44,10 +44,12 @@ public abstract class ItemCrate extends Item
         do
         {
             var i = CrateDrops.rollItem(rngoffset, rdg);
-            cval += i.getSellValue();
+            cval += i.getDropValue();
             loots.incrementItem(i);
         }
         while (cval < value);
+
+        return value;
     }
 
     public abstract long generateCoins(RandomDataGenerator rdg);

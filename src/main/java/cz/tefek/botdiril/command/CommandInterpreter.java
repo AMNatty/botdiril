@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import cz.tefek.botdiril.command.s.superuser.SuperUserCommandBase;
+import cz.tefek.botdiril.core.BotdirilConfig;
 import cz.tefek.botdiril.core.ServerPreferences;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
@@ -20,7 +22,7 @@ public class CommandInterpreter
 
     public static void initialize()
     {
-        var cathegories = Arrays.stream(CommandCathegory.values()).map(cat -> cat.toString().toLowerCase()).collect(Collectors.toList());
+        var cathegories = Arrays.stream(CommandCategory.values()).map(cat -> cat.toString().toLowerCase()).collect(Collectors.toList());
 
         // Lock the command list
         commands = Collections.unmodifiableList(commands);
@@ -53,7 +55,8 @@ public class CommandInterpreter
     {
         var channel = message.getTextChannel();
         var guild = channel.getGuild();
-        var serverPrefix = ServerPreferences.getServerByID(guild.getIdLong()).getPrefix();
+        var sc = ServerPreferences.getServerByID(guild.getIdLong());
+        var serverPrefix = sc.getPrefix();
 
         if (!commandRaw.isEmpty())
         {
@@ -65,6 +68,12 @@ public class CommandInterpreter
 
                 if (command != null)
                 {
+                    if (!BotdirilConfig.isSuperUser(guild, message.getAuthor()) && command instanceof SuperUserCommandBase)
+                    {
+                        channel.sendMessage("You are not allowed to use superuser commands.").submit();
+                        return;
+                    }
+
                     if (command.canRunWithoutArguments())
                     {
                         command.interpret(message, new Object[0]);
@@ -86,6 +95,12 @@ public class CommandInterpreter
 
             if (command != null)
             {
+                if (!BotdirilConfig.isSuperUser(guild, message.getAuthor()) && command instanceof SuperUserCommandBase)
+                {
+                    channel.sendMessage("You are not allowed to use superuser commands.").submit();
+                    return;
+                }
+
                 if (command.hasOpenEnd())
                 {
                     var cutArgs = uncutArgs;

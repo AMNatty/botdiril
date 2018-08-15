@@ -1,10 +1,14 @@
 package cz.tefek.botdiril.core;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import cz.tefek.botdiril.command.CommandInterpreter;
+import cz.tefek.botdiril.core.server.ChannelCache;
 import cz.tefek.botdiril.userdata.payment.Gateway;
 import cz.tefek.botdiril.userdata.payment.PayRequest;
 import cz.tefek.botdiril.voice.music.ActiveChannelManager;
-import net.dv8tion.jda.core.Permission;
+import cz.tefek.util.MiniTime;
 import net.dv8tion.jda.core.entities.ChannelType;
 import net.dv8tion.jda.core.entities.Game;
 import net.dv8tion.jda.core.events.ReadyEvent;
@@ -16,15 +20,18 @@ import net.dv8tion.jda.core.hooks.ListenerAdapter;
 
 public class BEventListener extends ListenerAdapter
 {
+    private static final String PLAYING = "www.tefek.cz";
+
     @Override
     public void onReady(ReadyEvent event)
     {
-        event.getJDA().getPresence().setGame(Game.listening("www.tefek.cz"));
+        event.getJDA().getPresence().setGame(Game.listening(PLAYING));
 
         event.getJDA().getGuilds().forEach(g -> {
-            if (ServerPreferences.getServerByID(g.getIdLong()) == null)
+            var sc = ServerPreferences.getServerByID(g.getIdLong());
+            if (sc == null)
             {
-                ServerPreferences.addServer(g.getDefaultChannel());
+                ServerPreferences.addServer(g);
             }
         });
 
@@ -34,7 +41,21 @@ public class BEventListener extends ListenerAdapter
     @Override
     public void onGuildJoin(GuildJoinEvent event)
     {
-        ServerPreferences.addServer(event.getGuild().getDefaultChannel());
+        var g = event.getGuild();
+
+        System.out.println("Joining guild " + g);
+
+        var sc = ServerPreferences.getServerByID(g.getIdLong());
+        if (sc == null)
+        {
+            new Timer().schedule(new TimerTask() {
+                @Override
+                public void run()
+                {
+                    ServerPreferences.addServer(g);
+                }
+            }, 5000);
+        }
     }
 
     @Override
@@ -73,7 +94,9 @@ public class BEventListener extends ListenerAdapter
             var channel = event.getTextChannel();
             var content = event.getMessage().getContentRaw();
 
-            if (content.toLowerCase().startsWith("botdiril ") && (member.hasPermission(Permission.ADMINISTRATOR) || member.getUser().getIdLong() == 263648016982867969L))
+            var hasPower = BotdirilConfig.isSuperUserOverride(guild, user);
+
+            if (content.toLowerCase().startsWith("botdiril ") && hasPower)
             {
                 if (content.equalsIgnoreCase("botdiril go away"))
                 {
@@ -89,13 +112,19 @@ public class BEventListener extends ListenerAdapter
                             guild.getController().setNickname(bot, "Botdiril").complete();
                             channel.sendMessage("Alright, I'll reset it all.").complete();
 
-                            ServerPreferences.wipePreviousConfig(channel);
+                            ServerPreferences.wipePreviousConfig(guild);
                         }
                         else if (content.toLowerCase().startsWith("botdiril prefix "))
                         {
                             var prefix = content.substring("botdiril prefix ".length());
 
                             ServerPreferences.fixPrefix(channel, prefix);
+                        }
+                        else if (content.toLowerCase().startsWith("botdiril channel "))
+                        {
+                            var prefix = content.substring("botdiril channel ".length());
+
+                            ServerPreferences.setChannel(channel, prefix);
                         }
                     }
                     else
@@ -105,15 +134,31 @@ public class BEventListener extends ListenerAdapter
                     }
                 }
             }
-
-            if (sc != null)
+            else if (sc != null)
+            {
                 if (sc.isInstalled())
                 {
                     if (content.startsWith(sc.getPrefix()))
                     {
-                        CommandInterpreter.interpretCommand(event.getMessage(), content.substring(sc.getPrefix().length()));
+                        if (ChannelCache.disabledChannels.contains(channel.getIdLong()) && !hasPower)
+                        {
+                            channel.sendMessage("You are not allowed to use my commands here.").submit();
+                            return;
+                        }
+
+                        var punished = sc.isPunished(channel, member);
+
+                        if (punished == -1)
+                        {
+                            CommandInterpreter.interpretCommand(event.getMessage(), content.substring(sc.getPrefix().length()));
+                        }
+                        else
+                        {
+                            channel.sendMessage(String.format("You are punished and therefore you cannot use my commands. You need to wait %s before using my commands again.", MiniTime.fromMillisDiffNow(punished)));
+                        }
                     }
                 }
+            }
         }
     }
 

@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.core.ServerPreferences;
 import cz.tefek.botdiril.userdata.UserStorage;
 import cz.tefek.botdiril.userdata.items.Item;
@@ -32,7 +32,7 @@ public class CommandSellCards implements Command
         if (params.length == 0)
         {
             var prefix = ServerPreferences.getServerByID(message.getGuild().getIdLong()).getPrefix();
-            var msg = String.format("This sells all your card. This cannot be undone. To proceed type `%ssellcards confirm`. Just ignore this message if you changed your mind.", prefix);
+            var msg = String.format("This sells all your card. This cannot be undone. **Keep in mind cards have a very low sell value.**\n To proceed type `%ssellcards confirm`. Just ignore this message if you changed your mind.", prefix);
             message.getTextChannel().sendMessage(msg).submit();
 
             return;
@@ -44,15 +44,18 @@ public class CommandSellCards implements Command
 
             var total = 0L;
 
-            for (ItemPair is : ui.getInventory())
+            for (ItemPair is : ui.getInventory(-1))
             {
                 if (is.getItem() instanceof ItemCard)
                 {
-                    var coins = is.getAmount() * is.getItem().getSellValue();
+                    var item = is.getItem();
+                    var amount = is.getAmount();
+
+                    var coins = amount * item.getSellValue();
 
                     total += coins;
 
-                    ui.sellItems(is.getItem(), coins, is.getAmount());
+                    ui.sellItems(item, coins, amount);
                 }
             }
 
@@ -79,8 +82,8 @@ public class CommandSellCards implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.ECONOMY;
+        return CommandCategory.ITEMS;
     }
 }

@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.voice.music.ActiveChannelManager;
 import net.dv8tion.jda.core.entities.Message;
 
@@ -41,9 +41,9 @@ public class CommandNowPlaying implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.MUSIC;
+        return CommandCategory.MUSIC;
     }
 
     @Override

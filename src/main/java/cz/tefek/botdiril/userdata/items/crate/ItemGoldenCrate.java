@@ -15,13 +15,13 @@ public class ItemGoldenCrate extends ItemCrate
     @Override
     public long generateCoins(RandomDataGenerator rdg)
     {
-        return rdg.nextLong(getValue(rdg) / 3, getValue(rdg));
+        return rdg.nextLong(getValue(rdg) / 30, getValue(rdg) / 10);
     }
 
     @Override
     public long getValue(RandomDataGenerator rdg)
     {
-        return 50000 + rdg.nextInt(7000, 14000);
+        return 500_000 + rdg.nextInt(70_000, 140_000);
     }
 
     @Override

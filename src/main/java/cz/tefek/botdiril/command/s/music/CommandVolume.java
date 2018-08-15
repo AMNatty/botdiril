@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.core.ServerPreferences;
 import cz.tefek.botdiril.persistent.Persistency;
 import cz.tefek.botdiril.voice.music.ActiveChannelManager;
@@ -70,8 +70,8 @@ public class CommandVolume implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.MUSIC;
+        return CommandCategory.MUSIC;
     }
 }

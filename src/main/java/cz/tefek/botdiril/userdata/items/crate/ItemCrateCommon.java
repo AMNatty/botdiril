@@ -17,13 +17,13 @@ public class ItemCrateCommon extends ItemCrate
     public long generateCoins(RandomDataGenerator rdg)
     {
         var val = getValue(rdg);
-        return rdg.nextLong(val / 5, val / 2);
+        return rdg.nextLong(val / 50, val / 20);
     }
 
     @Override
     public long getValue(RandomDataGenerator rdg)
     {
-        return 1300 + rdg.nextInt(500, 1500);
+        return 13000 + rdg.nextInt(5000, 15000);
     }
 
     @Override

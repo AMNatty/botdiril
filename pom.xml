@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>cz.tefek.bot</groupId>
   <artifactId>botdiril</artifactId>
-  <version>beta-21-qol2</version>
+  <version>beta-233</version>
   <properties>
     <maven.compiler.source>10</maven.compiler.source>
     <maven.compiler.target>10</maven.compiler.target>
@@ -44,6 +44,11 @@
 	    <artifactId>commons-math3</artifactId>
 	    <version>3.6.1</version>
 	</dependency>
+	<dependency>
+	    <groupId>com.google.guava</groupId>
+	    <artifactId>guava</artifactId>
+	    <version>25.1-jre</version>
+	</dependency>
     <dependency>
     	<groupId>commons-io</groupId>
     	<artifactId>commons-io</artifactId>
@@ -69,6 +74,16 @@
 	  <groupId>com.fasterxml.jackson.core</groupId>
   	  <artifactId>jackson-databind</artifactId>
   	  <version>2.9.4</version>
+	</dependency>
+	<dependency>
+	    <groupId>mysql</groupId>
+	    <artifactId>mysql-connector-java</artifactId>
+	    <version>8.0.11</version>
+	</dependency>
+	<dependency>
+	    <groupId>org.springframework</groupId>
+	    <artifactId>spring-jdbc</artifactId>
+	    <version>5.0.7.RELEASE</version>
 	</dependency>
   </dependencies>  
   <packaging>jar</packaging>  

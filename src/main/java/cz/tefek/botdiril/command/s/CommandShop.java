@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import cz.tefek.botdiril.command.Command;
-import cz.tefek.botdiril.command.CommandCathegory;
+import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.core.ServerPreferences;
 import cz.tefek.botdiril.userdata.items.Item;
 import net.dv8tion.jda.core.EmbedBuilder;
@@ -50,10 +50,8 @@ public final class CommandShop implements Command
                 sub.append(c.getBuyValue());
                 sub.append(" ");
                 sub.append(Item.COINDIRIL);
-                sub.append("\n**Sells back for:** ");
-                sub.append(c.getSellValue());
-                sub.append(" ");
-                sub.append(Item.COINDIRIL);
+                sub.append("\n");
+                sub.append(c.canBeSold() ? "**Sells back for:** " + c.getSellValue() + " " + Item.COINDIRIL : "*Cannot be sold.*");
 
                 eb.addField(title.toString(), sub.toString(), true);
             }
@@ -88,8 +86,8 @@ public final class CommandShop implements Command
     }
 
     @Override
-    public CommandCathegory getCathegory()
+    public CommandCategory getCategory()
     {
-        return CommandCathegory.ECONOMY;
+        return CommandCategory.ECONOMY;
     }
 }

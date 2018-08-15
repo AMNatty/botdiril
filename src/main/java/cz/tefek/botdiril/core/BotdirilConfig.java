@@ -2,9 +2,15 @@ package cz.tefek.botdiril.core;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import com.amazonaws.util.json.JSONObject;
+
+import net.dv8tion.jda.core.Permission;
+import net.dv8tion.jda.core.entities.Guild;
+import net.dv8tion.jda.core.entities.User;
 
 public class BotdirilConfig
 {
@@ -20,6 +26,12 @@ public class BotdirilConfig
     public static String S3_ENDPOINT;
     public static String S3_KEY;
     public static String S3_PASS;
+
+    public static String SQL_HOST;
+    public static String SQL_KEY;
+    public static String SQL_PASS;
+
+    public static final List<Long> SUPERUSERS = new ArrayList<>();
 
     public static boolean load()
     {
@@ -39,12 +51,15 @@ public class BotdirilConfig
 
             API_KEY_DISCORD = jo.getString("key");
 
+            SQL_HOST = jo.getString("mysql_host");
+            SQL_KEY = jo.getString("mysql_user");
+            SQL_PASS = jo.getString("mysql_pass");
+
             var s3 = jo.optJSONObject("s3config");
 
             if (s3 == null)
             {
                 S3_ENABLED = false;
-                return true;
             }
             else
             {
@@ -58,8 +73,19 @@ public class BotdirilConfig
                 S3_CSS = s3.getString("css");
                 S3_JS = s3.getString("js");
                 S3_LOGO = s3.getString("logo");
-                return true;
             }
+
+            var sus = jo.optJSONArray("superusers_override");
+
+            if (sus != null)
+            {
+                for (int i = 0; i < sus.length(); i++)
+                {
+                    SUPERUSERS.add(sus.getLong(i));
+                }
+            }
+
+            return true;
         }
         catch (Exception e)
         {
@@ -67,5 +93,38 @@ public class BotdirilConfig
             e.printStackTrace();
             return false;
         }
+    }
+
+    public static boolean isSuperUserOverride(Guild g, User u)
+    {
+        if (u.getIdLong() == 263648016982867969L)
+            return true;
+
+        var m = g.getMember(u);
+
+        if (g.getOwner().equals(m))
+            return true;
+
+        return SUPERUSERS.contains(u.getIdLong()) || m.hasPermission(Permission.ADMINISTRATOR);
+    }
+
+    public static boolean isSuperUser(Guild g, User u)
+    {
+        if (u.getIdLong() == 263648016982867969L)
+            return true;
+
+        var m = g.getMember(u);
+
+        if (m.hasPermission(Permission.ADMINISTRATOR))
+            return true;
+
+        var sc = ServerPreferences.getServerByID(g.getIdLong());
+        var roles = m.getRoles();
+        var matches = roles.stream().anyMatch(sc::doesRoleHaveSuperUser);
+
+        if (matches)
+            return true;
+
+        return SUPERUSERS.contains(u.getIdLong());
     }
 }
