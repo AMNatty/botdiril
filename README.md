@@ -8,7 +8,7 @@ Community Discord Bot running on JDA specifically crafted for Vandiland.
 * League of Legends data (WIP)
 * Music player (WIP)
 
-**This is a Eclipse Maven project. JDK 10+**
+**This is an Eclipse Maven project. JDK 10+**
 
 Botdiril uses several dependencies (see ``pom.xml``), mainly **JDA** and **lavaplayer**.
 
