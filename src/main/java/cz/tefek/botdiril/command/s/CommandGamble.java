@@ -3,6 +3,7 @@ package cz.tefek.botdiril.command.s;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 import cz.tefek.botdiril.command.Command;
 import cz.tefek.botdiril.command.CommandCategory;
@@ -78,13 +79,15 @@ public class CommandGamble implements Command
 
                 var random = new SecureRandom();
                 var chest = random.nextInt(101) > 96 && bet > 2000;
-                var ratio = random.nextDouble() * 2 + betRate * 0.05;
+                var ratio = random.nextDouble() * 2.05;
                 var jackpot = random.nextInt(1001) > 988 + (1 - betRate) * 10;
                 var ultraJackpot = random.nextInt(5001) > 4985 + (1 - betRate) * 10;
 
                 var won = Math.round(ratio * bet) - bet;
 
-                if (ratio < 0.25)
+                final var lostEverything = 0.25;
+
+                if (ratio < lostEverything)
                     won = -bet;
 
                 if (jackpot)
@@ -95,6 +98,8 @@ public class CommandGamble implements Command
 
                 if (jackpot && ultraJackpot)
                     won = bet * 80;
+
+                var perc = String.format(Locale.US, "%.2f%%", ratio * 100);
 
                 if (ultraJackpot && jackpot)
                 {
@@ -112,23 +117,23 @@ public class CommandGamble implements Command
                 {
                     if (won == 0)
                     {
-                        message.getTextChannel().sendMessage("You get your bet back this time. Your lucky number: ").submit();
+                        message.getTextChannel().sendMessage("You get your bet back this time. Your percentage: " + perc).submit();
                     }
-                    else if (ratio < 0.25)
+                    else if (ratio < lostEverything)
                     {
-                        message.getTextChannel().sendMessage("You lost your entire bet - " + bet + Item.KEK + "s. Your lucky number: ").submit();
+                        message.getTextChannel().sendMessage("You lost your entire bet - " + bet + Item.KEK + "s. Your percentage: " + perc).submit();
                     }
                     else if (ratio < 1)
                     {
-                        message.getTextChannel().sendMessage("Unlucky... You lost " + Math.abs(won) + Item.KEK + "s. Your lucky number: ").submit();
+                        message.getTextChannel().sendMessage("Unlucky... You lost " + Math.abs(won) + Item.KEK + "s. Your percentage: " + perc).submit();
                     }
                     else if (ratio < 1.5)
                     {
-                        message.getTextChannel().sendMessage("You win " + Math.abs(won) + Item.KEK + "s! Your lucky number: ").submit();
+                        message.getTextChannel().sendMessage("You win " + Math.abs(won) + Item.KEK + "s! Your percentage: " + perc).submit();
                     }
                     else
                     {
-                        message.getTextChannel().sendMessage("Nice! You win " + Math.abs(won) + Item.KEK + "s! Your lucky number: ").submit();
+                        message.getTextChannel().sendMessage("Nice! You win " + Math.abs(won) + Item.KEK + "s! Your percentage: " + perc).submit();
                     }
                 }
 
