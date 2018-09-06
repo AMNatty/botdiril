@@ -1,6 +1,8 @@
 # botdiril
 Community Discord Bot running on JDA specifically crafted for Vandiland.
 
+## This version is discontinued.
+
 **Features:**
 * Economy system
 * RNG based (gambling) commands
