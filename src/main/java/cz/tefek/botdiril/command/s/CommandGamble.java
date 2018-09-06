@@ -5,12 +5,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.commons.math3.random.RandomDataGenerator;
+
 import cz.tefek.botdiril.command.Command;
 import cz.tefek.botdiril.command.CommandCategory;
 import cz.tefek.botdiril.core.ServerPreferences;
 import cz.tefek.botdiril.userdata.UserStorage;
 import cz.tefek.botdiril.userdata.items.AmountParser;
 import cz.tefek.botdiril.userdata.items.Item;
+import cz.tefek.botdiril.userdata.items.card.ItemCard;
+import cz.tefek.botdiril.userdata.items.crate.CrateDrops;
 import net.dv8tion.jda.core.entities.Message;
 
 public class CommandGamble implements Command
@@ -35,7 +39,7 @@ public class CommandGamble implements Command
 
         if (ui.useTimer("gamble_timeout", 500) != -1)
         {
-            message.getTextChannel().sendMessage("Hey don't spam me so hard! (8 seconds)").submit();
+            message.delete().queue();
             return;
         }
 
@@ -75,43 +79,49 @@ public class CommandGamble implements Command
             }
             else
             {
-                var betRate = bet / (double) kekamt;
-
                 var random = new SecureRandom();
-                var chest = random.nextInt(101) > 96 && bet > 2000;
-                var ratio = random.nextDouble() * 2.05;
-                var jackpot = random.nextInt(1001) > 988 + (1 - betRate) * 10;
-                var ultraJackpot = random.nextInt(5001) > 4985 + (1 - betRate) * 10;
+                var chest = random.nextInt(101) > 96 && bet > 2500;
+                var ratio = random.nextDouble() * 1.8;
+                var jackpot = random.nextDouble();
 
                 var won = Math.round(ratio * bet) - bet;
 
-                final var lostEverything = 0.25;
-
-                if (ratio < lostEverything)
-                    won = -bet;
-
-                if (jackpot)
-                    won = bet * 8;
-
-                if (ultraJackpot)
-                    won = bet * 32;
-
-                if (jackpot && ultraJackpot)
-                    won = bet * 80;
-
                 var perc = String.format(Locale.US, "%.2f%%", ratio * 100);
 
-                if (ultraJackpot && jackpot)
+                if (jackpot > 0.95 && bet / (double) kekamt > 0.1)
                 {
-                    message.getTextChannel().sendMessage("NANI?!?! How did you get both JACKPOT and ULTRA JACKPOT at once?!?! You win " + won + Item.KEK + "s.").submit();
-                }
-                else if (ultraJackpot)
-                {
-                    message.getTextChannel().sendMessage("ULTRA POGGERS!! You win " + won + Item.KEK + "s. ヽ༼ຈل͜ຈ༽ﾉ").submit();
-                }
-                else if (jackpot)
-                {
-                    message.getTextChannel().sendMessage("JACKPOT!! You win " + won + Item.KEK + "s.").submit();
+                    var jr = random.nextDouble();
+
+                    Item card;
+                    while (!((card = CrateDrops.rollItem((long) (5_000 + Math.pow(bet, 0.8)), new RandomDataGenerator())) instanceof ItemCard));
+
+                    ui.addItem(card);
+
+                    if (jr > 0.99)
+                    {
+                        won = bet * 16;
+                        message.getTextChannel().sendMessage("GIGA POGGERS!! You win " + won + Item.KEK + " and " + card.getIcon() + card.getHumanName() + ". ヽ༼ຈل͜ຈ༽ﾉ").submit();
+                    }
+                    else if (jr > 0.95)
+                    {
+                        won = bet * 8;
+                        message.getTextChannel().sendMessage("ULTRA POGGERS!! You win " + won + Item.KEK + " and " + card.getIcon() + card.getHumanName() + ".").submit();
+                    }
+                    else if (jr > 0.9)
+                    {
+                        won = bet * 6;
+                        message.getTextChannel().sendMessage("POGGERS!! You win " + won + Item.KEK + " and " + card.getIcon() + card.getHumanName() + ".").submit();
+                    }
+                    else if (jr > 0.5)
+                    {
+                        won = bet * 4;
+                        message.getTextChannel().sendMessage("<a:kekoverdrive:471056255734120458>! You win " + won + Item.KEK + " and " + card.getIcon() + card.getHumanName() + ".").submit();
+                    }
+                    else
+                    {
+                        won = (long) (bet * 2.5);
+                        message.getTextChannel().sendMessage("Mega <:kek:472067325080633346>! You win " + won + Item.KEK + " and " + card.getIcon() + card.getHumanName() + ".").submit();
+                    }
                 }
                 else
                 {
@@ -119,7 +129,7 @@ public class CommandGamble implements Command
                     {
                         message.getTextChannel().sendMessage("You get your bet back this time. Your percentage: " + perc).submit();
                     }
-                    else if (ratio < lostEverything)
+                    else if (won == -bet)
                     {
                         message.getTextChannel().sendMessage("You lost your entire bet - " + bet + Item.KEK + "s. Your percentage: " + perc).submit();
                     }

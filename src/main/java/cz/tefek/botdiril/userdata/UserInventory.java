@@ -195,6 +195,7 @@ public class UserInventory
                 st.setLong(2, coins);
                 st.setLong(3, coins);
                 st.execute();
+                st.close();
             }
             catch (SQLException e)
             {
@@ -213,13 +214,16 @@ public class UserInventory
 
             if (res.next())
             {
-                return res.getLong("amount");
+                var r = res.getLong("amount");
+                res.close();
+                return r;
             }
             else
             {
                 var ust = c.prepareStatement("INSERT INTO coins (userid, amount) VALUES (?, 0)");
                 ust.setInt(1, this.id);
                 ust.execute();
+                ust.close();
 
                 return 0;
             }
@@ -243,6 +247,7 @@ public class UserInventory
                 st.setLong(2, coins);
                 st.setLong(3, coins);
                 st.execute();
+                st.close();
             }
             catch (SQLException e)
             {
@@ -271,6 +276,7 @@ public class UserInventory
                     ust.setInt(2, this.id);
                     ust.setInt(3, rid);
                     ust.execute();
+                    ust.close();
                 }
                 else
                 {
@@ -279,7 +285,10 @@ public class UserInventory
                     ust.setInt(2, rid);
                     ust.setLong(3, amount);
                     ust.execute();
+                    ust.close();
                 }
+
+                stmt.close();
             }
             catch (SQLException e)
             {
@@ -310,6 +319,7 @@ public class UserInventory
                 }
 
                 var res = stmt.executeQuery();
+
                 var inv = new ArrayList<ItemPair>();
 
                 while (res.next())
@@ -325,6 +335,8 @@ public class UserInventory
 
                     inv.add(new ItemPair(item, res.getLong("itemcount")));
                 }
+
+                stmt.close();
 
                 return inv;
             }
@@ -376,6 +388,8 @@ public class UserInventory
                     inv.add(new ItemPair(item, res.getLong("itemcount")));
                 }
 
+                stmt.close();
+
                 return inv;
             }
             catch (SQLException e)
@@ -426,7 +440,13 @@ public class UserInventory
                 var res = stmt.executeQuery();
 
                 if (res.next())
-                    return res.getLong("itemcount");
+                {
+                    var r = res.getLong("itemcount");
+                    stmt.close();
+                    return r;
+                }
+
+                stmt.close();
             }
             catch (SQLException e)
             {
@@ -489,6 +509,7 @@ public class UserInventory
                     ust.setInt(2, this.id);
                     ust.setString(3, tid);
                     ust.execute();
+                    ust.close();
                 }
                 else
                 {
@@ -497,6 +518,7 @@ public class UserInventory
                     ust.setLong(2, timestamp);
                     ust.setString(3, tid);
                     ust.execute();
+                    ust.close();
                 }
             }
             catch (SQLException e)
